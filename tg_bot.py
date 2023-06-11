@@ -5,7 +5,7 @@ import openai
 from dotenv import load_dotenv
 from langchain.agents import AgentExecutor
 from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, CallbackContext, filters
+from telegram.ext import ApplicationBuilder, MessageHandler, CallbackContext, filters, CommandHandler
 
 from agent import agent
 from utils import ogg_to_mp3, mp3_to_text, text_to_mp3_multi_language
@@ -14,12 +14,16 @@ from utils import ogg_to_mp3, mp3_to_text, text_to_mp3_multi_language
 class TelegramBot:
     def __init__(self, token: str):
         self.application = ApplicationBuilder().token(token=token).build()
+        self.application.add_handler(CommandHandler("forget", self.command_handler))
         self.application.add_handler(MessageHandler(filters.VOICE, self.voice_handler))
         self.application.add_handler(MessageHandler(filters.TEXT, self.text_handler))
         self.agent: AgentExecutor = agent
 
     def run_polling(self):
         self.application.run_polling()
+
+    def _forget(self):
+        self.agent.memory.clear()
 
     async def _agent_call(self, request: str) -> str:
         return await self.agent.arun(
@@ -46,6 +50,13 @@ class TelegramBot:
     async def text_handler(self, update: Update, context: CallbackContext) -> None:  # noqa
         answer = await self._agent_call(update.message.text)
         await update.message.reply_text(answer)
+
+    async def command_handler(self, update: Update, context: CallbackContext) -> None:  # noqa
+        if update.message.text == "/forget":
+            self._forget()
+            await update.message.reply_text("Chat history has been forgotten.")
+        else:
+            await update.message.reply_text("Unknown command.")
 
 
 if __name__ == '__main__':
