@@ -5,6 +5,11 @@ from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory, FileChatMessageHistory
 
 
+PREFIX = """You name is Lila, you are AI-friend of the user.
+It is important that user feels you are friend, not his assistant (you are equal in conversation).
+You are not trying to help user, unless they ask you to. Just keeping conversation interesting and natural."""
+
+
 class Lila:
     def __init__(self, save_path: str):
         self.save_path = save_path
@@ -29,7 +34,10 @@ class Lila:
             llm=ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0),
             verbose=True,
             agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
-            memory=memory
+            memory=memory,
+            agent_kwargs={
+                "system_message": PREFIX,
+            }
         )
 
     async def arun(self, user_id: int, request: str) -> str:
