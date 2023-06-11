@@ -1,6 +1,6 @@
 import os.path
 
-from langchain.agents import initialize_agent, AgentType
+from langchain.agents import initialize_agent, AgentType, load_tools
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory, FileChatMessageHistory
 
@@ -29,9 +29,11 @@ class Lila:
 
     @staticmethod
     def _initialise_agent(memory: ConversationBufferMemory):
+        llm = ChatOpenAI(model_name="gpt-4", temperature=0)
+        tools = load_tools(["serpapi"], llm=llm)
         return initialize_agent(
-            tools=[],
-            llm=ChatOpenAI(model_name="gpt-4", temperature=0),
+            tools=tools,
+            llm=llm,
             verbose=True,
             agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
             memory=memory,
