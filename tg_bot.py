@@ -1,8 +1,5 @@
-import os
 import tempfile
 
-import openai
-from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, CallbackContext, filters, CommandHandler
 
@@ -48,12 +45,3 @@ class TelegramBot:
             await update.message.reply_text("Chat history has been forgotten.")
         else:
             await update.message.reply_text("Unknown command.")
-
-
-if __name__ == '__main__':
-    load_dotenv()
-    openai.api_key = os.environ["OPENAI_API_KEY"]
-    TelegramBot(
-        token=os.environ["TELEGRAM_TOKEN"],
-        lila=Lila(save_path=os.environ["SAVE_PATH"])
-    ).run_polling()
