@@ -1,0 +1,12 @@
+openai
+python-dotenv
+langchain
+pydantic
+pydub
+python-telegram-bot
+gTTS
+google-cloud-translate
+
+
+librosa
+soundfile
