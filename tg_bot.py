@@ -26,9 +26,12 @@ class TelegramBot:
         self.agent.memory.clear()
 
     async def _agent_call(self, request: str) -> str:
-        return await self.agent.arun(
-            input=request
-        )
+        try:
+            return await self.agent.arun(
+                input=request
+            )
+        except Exception as e:
+            return str(e)
 
     @staticmethod
     async def _load_voice_mp3(update: Update, context: CallbackContext, mp3_path: str):
