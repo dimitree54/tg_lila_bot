@@ -7,9 +7,29 @@ from agent import Lila
 from utils import ogg_to_mp3, mp3_to_text, text_to_mp3_multi_language
 
 
+INTRO = """This conversational bot is developed by Dmitrii Rashchenko.
+The bot will call itself Lila and pretend to be your friend.
+It is able to keep conversation, answer your questions, google things for you.
+Its functional will be extended in the future.
+
+The bot is powered by OpenAI GPT-4 large language model.
+It may accidentally produce some false, misleading or offensive content, be careful.
+
+Your chat will be stored on my PC. You can delete it by sending /forget command.
+Use /forget command to reset the bot, for example when you change topic of conversation, or if there is an error.
+
+You can find the source code of the bot [here](https://github.com/dimitree54/tg_lila_bot).
+
+If you have any questions/problems/suggestions, please contact me via Telegram: @dimitree54
+
+Bot supports voice messages (and will answer you with voice too), give it a try!
+To start just send any message to the bot."""
+
+
 class TelegramBot:
     def __init__(self, token: str, lila: Lila):
         self.application = ApplicationBuilder().token(token=token).build()
+        self.application.add_handler(CommandHandler("start", self.command_handler))
         self.application.add_handler(CommandHandler("forget", self.command_handler))
         self.application.add_handler(MessageHandler(filters.VOICE, self.voice_handler))
         self.application.add_handler(MessageHandler(filters.TEXT, self.text_handler))
@@ -43,5 +63,7 @@ class TelegramBot:
         if update.message.text == "/forget":
             self.lila.forget(update.message.from_user.id)
             await update.message.reply_text("Chat history has been forgotten.")
+        if update.message.text == "/start":
+            await update.message.reply_text(INTRO, disable_web_page_preview=True, parse_mode="Markdown")
         else:
             await update.message.reply_text("Unknown command.")
