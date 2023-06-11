@@ -23,8 +23,7 @@ class TelegramBot:
 
     async def _agent_call(self, request: str) -> str:
         return await self.agent.arun(
-            input=request,
-            chat_history=[]
+            input=request
         )
 
     @staticmethod
