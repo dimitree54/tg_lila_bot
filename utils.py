@@ -1,10 +1,11 @@
+import os
+import tempfile
 from typing import Optional
 
 import openai
 from gtts import gTTS
-import librosa
-import soundfile as sf
 from pydub import AudioSegment
+from speechkit import Session, SpeechSynthesis
 
 from language_detector import TTSLanguage, LanguageDetector
 
@@ -25,17 +26,20 @@ def text_to_mp3(text: str, mp3_path: str, language: TTSLanguage):
     tts.save(mp3_path)
 
 
+def text_to_ogg_yandex(text: str, wav_path: str):
+    session = Session.from_api_key(os.environ["YANDEX_TTS_API_KEY"])
+    SpeechSynthesis(session).synthesize(
+        wav_path, text=text, voice='alena', emotion='good'
+    )
+
+
 def text_to_mp3_multi_language(text: str, mp3_path: str) -> Optional[str]:
     language = LanguageDetector().detect(text)
     if language == TTSLanguage.OTHER:
         return None
     text_to_mp3(text, mp3_path, language)
     if language == TTSLanguage.RUSSIAN:
-        speed_up_audio(mp3_path, mp3_path, 1.5)
+        with tempfile.NamedTemporaryFile(suffix=".ogg") as ogg_file:
+            text_to_ogg_yandex(text, ogg_file.name)
+            ogg_to_mp3(ogg_file.name, mp3_path)
     return mp3_path
-
-
-def speed_up_audio(input_path: str, output_path: str, speed: float):
-    time_series, sample_rate = librosa.load(input_path)
-    time_series_fast = librosa.effects.time_stretch(time_series, rate=speed)
-    sf.write(output_path, time_series_fast, samplerate=int(sample_rate))
