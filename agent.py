@@ -31,7 +31,7 @@ class Lila:
     def _initialise_agent(memory: ConversationBufferMemory):
         return initialize_agent(
             tools=[],
-            llm=ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0),
+            llm=ChatOpenAI(model_name="gpt-4", temperature=0),
             verbose=True,
             agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
             memory=memory,
