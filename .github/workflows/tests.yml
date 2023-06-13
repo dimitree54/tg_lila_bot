@@ -1,0 +1,35 @@
+name: Python checks
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.11
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8
+        # add any other dependencies your project might need
+
+    - name: Lint with flake8
+      run: |
+        flake8
+
+    - name: Run unittest
+      run: |
+        printf '%s\n' "${{ secrets.GOOGLE_CREDENTIALS }}" > ./tg_lila_bot/google-credentials.json
+        echo YANDEX_TTS_API_KEY=${{ secrets.YANDEX_TTS_API_KEY }} >> ./tg_lila_bot/.env
+        echo OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} >> ./tg_lila_bot/.env
+        echo SERPAPI_API_KEY=${{ secrets.SERPAPI_API_KEY }} >> ./tg_lila_bot/.env
+        echo GOOGLE_APPLICATION_CREDENTIALS=./tg_lila_bot/google-credentials.json >> ./tg_lila_bot/.env
+        python -m unittest discover
