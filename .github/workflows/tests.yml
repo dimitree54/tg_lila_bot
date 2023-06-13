@@ -17,9 +17,11 @@ jobs:
 
     - name: Install dependencies
       run: |
+        apt-get install -y ffmpeg
         python -m pip install --upgrade pip
         pip install flake8
-        # add any other dependencies your project might need
+        pip install -U pip setuptools wheel
+        pip install -r requirements.txt
 
     - name: Lint with flake8
       run: |
@@ -27,9 +29,8 @@ jobs:
 
     - name: Run unittest
       run: |
-        pip install -U pip setuptools wheel
-        pip install -r requirements.txt
         printf '%s\n' "${{ secrets.GOOGLE_CREDENTIALS }}" > ./google-credentials.json
+        cat ./google-credentials.json
         echo YANDEX_TTS_API_KEY=${{ secrets.YANDEX_TTS_API_KEY }} >> ./.env
         echo OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} >> ./.env
         echo SERPAPI_API_KEY=${{ secrets.SERPAPI_API_KEY }} >> ./.env
