@@ -27,9 +27,9 @@ jobs:
 
     - name: Run unittest
       run: |
-        printf '%s\n' "${{ secrets.GOOGLE_CREDENTIALS }}" > ./tg_lila_bot/google-credentials.json
-        echo YANDEX_TTS_API_KEY=${{ secrets.YANDEX_TTS_API_KEY }} >> ./tg_lila_bot/.env
-        echo OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} >> ./tg_lila_bot/.env
-        echo SERPAPI_API_KEY=${{ secrets.SERPAPI_API_KEY }} >> ./tg_lila_bot/.env
-        echo GOOGLE_APPLICATION_CREDENTIALS=./tg_lila_bot/google-credentials.json >> ./tg_lila_bot/.env
+        printf '%s\n' "${{ secrets.GOOGLE_CREDENTIALS }}" > ./google-credentials.json
+        echo YANDEX_TTS_API_KEY=${{ secrets.YANDEX_TTS_API_KEY }} >> ./.env
+        echo OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} >> ./.env
+        echo SERPAPI_API_KEY=${{ secrets.SERPAPI_API_KEY }} >> ./.env
+        echo GOOGLE_APPLICATION_CREDENTIALS=./google-credentials.json >> ./.env
         python -m unittest discover
