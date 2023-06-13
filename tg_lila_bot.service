@@ -1,0 +1,10 @@
+[Unit]
+Description=tg_lila_bot
+
+[Service]
+ExecStart=/root/tg_lila_bot/venv/bin/python3 /root/tg_lila_bot/main.py
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,46 @@
+name: Deploy to Vultr VM
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Execute commands over SSH on Vultr VM
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.VULTR_VM_HOST }}
+        username: ${{ secrets.VULTR_VM_USERNAME }}
+        key: ${{ secrets.VULTR_VM_SSH_KEY }}
+        password: ${{ secrets.VULTR_VM_PASSWORD }}
+        script: |
+          apt-get update && apt-get upgrade -y
+          apt-get install -y git python3-venv ffmpeg
+          systemctl stop tg_lila_bot || true
+          mkdir -p /root/tg_lila_bot_data
+          
+          rm -rf /root/tg_lila_bot
+          git clone https://github.com/dimitree54/tg_lila_bot.git /root/tg_lila_bot
+          cd /root/tg_lila_bot
+          
+          python3 -m venv venv
+          source venv/bin/activate
+          pip3 install -r requirements.txt
+          
+          echo ${{ secrets.GOOGLE_CREDENTIALS }} >> /root/tg_lila_bot/google-credentials.json
+          echo TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }} >> /root/tg_lila_bot/.env
+          echo YANDEX_TTS_API_KEY=${{ secrets.YANDEX_TTS_API_KEY }} >> /root/tg_lila_bot/.env
+          echo OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} >> /root/tg_lila_bot/.env
+          echo SERPAPI_API_KEY=${{ secrets.SERPAPI_API_KEY }} >> /root/tg_lila_bot/.env
+          echo GOOGLE_APPLICATION_CREDENTIALS=/root/tg_lila_bot/google-credentials.json >> /root/tg_lila_bot/.env
+          echo SAVE_PATH=/root/tg_lila_bot_data >> /root/tg_lila_bot/.env
+          
+          cp /root/tg_lila_bot/tg_lila_bot.service /etc/systemd/system/
+          systemctl daemon-reload
+          systemctl enable tg_lila_bot
+          systemctl start tg_lila_bot
