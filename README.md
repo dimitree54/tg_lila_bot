@@ -1,6 +1,8 @@
 # Telegram Bot Lila
 Bot is available by [link](https://github.com/dimitree54/tg_lila_bot).
 
+<img height="200" src="./.readme_images/IMG_20230113_182020.jpg" width="200"/>
+
 ## Setup
 1. `apt-get install ffmpeg` (optional, for voice messages)
 2. Get Telegram bot token from @BotFather
