@@ -6,6 +6,5 @@ pydub==0.25.1
 python-telegram-bot==20.3
 gTTS==2.3.2
 google-cloud-translate==3.11.1
-speechkit==2.2.2
-grpcio-tools==1.54.2
-protobuf==3.19.6
+speechkit==2.1.0
+grpcio-tools==1.49.0
