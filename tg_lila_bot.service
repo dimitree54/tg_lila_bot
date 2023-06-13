@@ -5,6 +5,7 @@ Description=tg_lila_bot
 ExecStart=/root/tg_lila_bot/venv/bin/python3 /root/tg_lila_bot/main.py
 Restart=always
 User=root
+Environment=PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 
 [Install]
 WantedBy=multi-user.target

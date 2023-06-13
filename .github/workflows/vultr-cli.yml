@@ -40,7 +40,6 @@ jobs:
           echo SERPAPI_API_KEY=${{ secrets.SERPAPI_API_KEY }} >> /root/tg_lila_bot/.env
           echo GOOGLE_APPLICATION_CREDENTIALS=/root/tg_lila_bot/google-credentials.json >> /root/tg_lila_bot/.env
           echo SAVE_PATH=/root/tg_lila_bot_data >> /root/tg_lila_bot/.env
-          echo PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python >> /root/tg_lila_bot/.env
           
           cp /root/tg_lila_bot/tg_lila_bot.service /etc/systemd/system/
           systemctl daemon-reload
