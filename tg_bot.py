@@ -63,7 +63,7 @@ class TelegramBot:
         if update.message.text == "/forget":
             self.lila.forget(update.message.from_user.id)
             await update.message.reply_text("Chat history has been forgotten.")
-        if update.message.text == "/start":
+        elif update.message.text == "/start":
             await update.message.reply_text(INTRO, disable_web_page_preview=True, parse_mode="Markdown")
         else:
             await update.message.reply_text("Unknown command.")
