@@ -16,7 +16,7 @@ class TestAudio(TestCase):
 
     def test_transcribe(self):
         transcript = mp3_to_text(os.path.join(self.data_dir, "123.mp3"))
-        self.assertEquals(transcript, 'Раз, два, три.')
+        self.assertEqual(transcript, 'Раз, два, три.')
 
     def test_tts(self):
         tts = gTTS("""Привет, меня зовут Лиила.""", lang='ru')
