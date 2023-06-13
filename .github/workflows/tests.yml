@@ -34,4 +34,5 @@ jobs:
         echo OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} >> ./.env
         echo SERPAPI_API_KEY=${{ secrets.SERPAPI_API_KEY }} >> ./.env
         echo GOOGLE_APPLICATION_CREDENTIALS=./google-credentials.json >> ./.env
+        export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
         python -m unittest discover
