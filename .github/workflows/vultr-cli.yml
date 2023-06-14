@@ -33,7 +33,7 @@ jobs:
           pip3 install -U pip setuptools wheel
           pip3 install -r requirements.txt
           
-          printf '%s\n' "${{ secrets.GOOGLE_CREDENTIALS }}" > /root/tg_lila_bot/google-credentials.json
+          printf '%s\n' '${{ secrets.GOOGLE_CREDENTIALS }}' > /root/tg_lila_bot/google-credentials.json
           echo TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }} >> /root/tg_lila_bot/.env
           echo YANDEX_TTS_API_KEY=${{ secrets.YANDEX_TTS_API_KEY }} >> /root/tg_lila_bot/.env
           echo OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} >> /root/tg_lila_bot/.env
