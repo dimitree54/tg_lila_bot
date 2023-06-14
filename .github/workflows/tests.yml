@@ -30,7 +30,6 @@ jobs:
     - name: Run unittest
       run: |
         printf '%s\n' "${{ secrets.GOOGLE_CREDENTIALS }}" > ~/google-credentials.json
-        cat ~/google-credentials.json
         echo YANDEX_TTS_API_KEY=${{ secrets.YANDEX_TTS_API_KEY }} >> ./.env
         echo OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} >> ./.env
         echo SERPAPI_API_KEY=${{ secrets.SERPAPI_API_KEY }} >> ./.env
