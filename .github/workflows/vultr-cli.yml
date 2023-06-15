@@ -13,13 +13,15 @@ jobs:
 
     - name: Execute commands over SSH on Vultr VM
       uses: appleboy/ssh-action@master
+      env:
+        GIT_REF: ${{ github.ref }}
       with:
         host: ${{ secrets.VULTR_VM_HOST }}
         username: ${{ secrets.VULTR_VM_USERNAME }}
         key: ${{ secrets.VULTR_VM_SSH_KEY }}
         password: ${{ secrets.VULTR_VM_PASSWORD }}
         script: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          if [[ "${GIT_REF}" == "refs/heads/main" ]]; then
             export SERVICE_NAME=tg_lila_bot
             export TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN_PRODUCTION }}
             export REPO_DIR=/root/tg_lila_bot
@@ -37,7 +39,7 @@ jobs:
           mkdir -p $DATA_DIR
           
           rm -rf $REPO_DIR
-          git clone -b "${{ github.ref }}" https://github.com/dimitree54/tg_lila_bot.git $REPO_DIR
+          git clone -b "${GIT_REF/refs\/heads\//}" https://github.com/dimitree54/tg_lila_bot.git $REPO_DIR
           cd $REPO_DIR
           
           python3 -m venv venv
