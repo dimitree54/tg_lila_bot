@@ -19,8 +19,8 @@ jobs:
         key: ${{ secrets.VULTR_VM_SSH_KEY }}
         password: ${{ secrets.VULTR_VM_PASSWORD }}
         script: |
-          echo $GITHUB_REF
-          systemctl stop asdfasdfa
+          echo ${{ GITHUB.REF }}
+          exit 1
           if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
             export SERVICE_NAME=tg_lila_bot
             export TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN_PRODUCTION }}
