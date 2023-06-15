@@ -19,21 +19,20 @@ jobs:
         key: ${{ secrets.VULTR_VM_SSH_KEY }}
         password: ${{ secrets.VULTR_VM_PASSWORD }}
         script: |
-          run: |
-            if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-              export SERVICE_NAME=tg_lila_bot
-              export TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN_PRODUCTION }}
-              export REPO_DIR=/root/tg_lila_bot
-              export DATA_DIR=/root/tg_lila_bot_data
-            else
-              export SERVICE_NAME=tg_lila_bot_dev
-              export TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
-              export REPO_DIR=/root/tg_lila_bot_dev
-              export DATA_DIR=/root/tg_lila_bot_dev_data
-            fi
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            export SERVICE_NAME=tg_lila_bot
+            export TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN_PRODUCTION }}
+            export REPO_DIR=/root/tg_lila_bot
+            export DATA_DIR=/root/tg_lila_bot_data
+          else
+            export SERVICE_NAME=tg_lila_bot_dev
+            export TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
+            export REPO_DIR=/root/tg_lila_bot_dev
+            export DATA_DIR=/root/tg_lila_bot_dev_data
+          fi
           
-          apt-get update && apt-get upgrade -y
-          apt-get install -y git python3-venv ffmpeg
+          sudo apt-get update && apt-get upgrade -y
+          sudo apt-get install -y git python3-venv ffmpeg
           systemctl stop $SERVICE_NAME || true
           mkdir -p $DATA_DIR
           
