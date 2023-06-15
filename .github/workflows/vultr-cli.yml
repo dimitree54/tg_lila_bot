@@ -19,10 +19,7 @@ jobs:
         key: ${{ secrets.VULTR_VM_SSH_KEY }}
         password: ${{ secrets.VULTR_VM_PASSWORD }}
         script: |
-          export GITHUB_REF=${{ GITHUB.REF_NAME }}
-          echo $GITHUB_REF
-          exit 1
-          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+          if [[ "${{ GITHUB.REF_NAME }}" == "main" ]]; then
             export SERVICE_NAME=tg_lila_bot
             export TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN_PRODUCTION }}
             export REPO_DIR=/root/tg_lila_bot
@@ -40,7 +37,7 @@ jobs:
           mkdir -p $DATA_DIR
           
           rm -rf $REPO_DIR
-          git clone -b ${$GITHUB_REF##*/} https://github.com/dimitree54/tg_lila_bot.git $REPO_DIR
+          git clone -b ${{ GITHUB.REF_NAME }} https://github.com/dimitree54/tg_lila_bot.git $REPO_DIR
           cd $REPO_DIR
           
           python3 -m venv venv
