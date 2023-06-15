@@ -19,29 +19,41 @@ jobs:
         key: ${{ secrets.VULTR_VM_SSH_KEY }}
         password: ${{ secrets.VULTR_VM_PASSWORD }}
         script: |
-          apt-get update && apt-get upgrade -y
-          apt-get install -y git python3-venv ffmpeg
-          systemctl stop tg_lila_bot || true
-          mkdir -p /root/tg_lila_bot_data
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            export SERVICE_NAME=tg_lila_bot
+            export TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN_PRODUCTION }}
+            export REPO_DIR=/root/tg_lila_bot
+            export DATA_DIR=/root/tg_lila_bot_data
+          else
+            export SERVICE_NAME=tg_lila_bot_dev
+            export TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
+            export REPO_DIR=/root/tg_lila_bot_dev
+            export DATA_DIR=/root/tg_lila_bot_dev_data
+          fi
           
-          rm -rf /root/tg_lila_bot
-          git clone https://github.com/dimitree54/tg_lila_bot.git /root/tg_lila_bot
-          cd /root/tg_lila_bot
+          sudo apt-get update && apt-get upgrade -y
+          sudo apt-get install -y git python3-venv ffmpeg
+          systemctl stop $SERVICE_NAME || true
+          mkdir -p $DATA_DIR
+          
+          rm -rf $REPO_DIR
+          git clone https://github.com/dimitree54/tg_lila_bot.git $REPO_DIR
+          cd $REPO_DIR
           
           python3 -m venv venv
           source venv/bin/activate
           pip3 install -U pip setuptools wheel
           pip3 install -r requirements.txt
           
-          printf '%s\n' '${{ secrets.GOOGLE_CREDENTIALS }}' > /root/tg_lila_bot/google-credentials.json
-          echo TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }} >> /root/tg_lila_bot/.env
-          echo YANDEX_TTS_API_KEY=${{ secrets.YANDEX_TTS_API_KEY }} >> /root/tg_lila_bot/.env
-          echo OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} >> /root/tg_lila_bot/.env
-          echo SERPAPI_API_KEY=${{ secrets.SERPAPI_API_KEY }} >> /root/tg_lila_bot/.env
-          echo GOOGLE_APPLICATION_CREDENTIALS=/root/tg_lila_bot/google-credentials.json >> /root/tg_lila_bot/.env
-          echo SAVE_PATH=/root/tg_lila_bot_data >> /root/tg_lila_bot/.env
+          printf '%s\n' '${{ secrets.GOOGLE_CREDENTIALS }}' > $REPO_DIR/google-credentials.json
+          echo TELEGRAM_TOKEN=$TELEGRAM_TOKEN >> $REPO_DIR/.env
+          echo YANDEX_TTS_API_KEY=${{ secrets.YANDEX_TTS_API_KEY }} >> $REPO_DIR/.env
+          echo OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} >> $REPO_DIR/.env
+          echo SERPAPI_API_KEY=${{ secrets.SERPAPI_API_KEY }} >> $REPO_DIR/.env
+          echo GOOGLE_APPLICATION_CREDENTIALS=$REPO_DIR/google-credentials.json >> $REPO_DIR/.env
+          echo SAVE_PATH=$DATA_DIR >> $REPO_DIR/.env
           
-          cp /root/tg_lila_bot/tg_lila_bot.service /etc/systemd/system/
+          cp $REPO_DIR/tg_lila_bot.service /etc/systemd/system/$SERVICE_NAME.service
           systemctl daemon-reload
-          systemctl enable tg_lila_bot
-          systemctl start tg_lila_bot
+          systemctl enable $SERVICE_NAME
+          systemctl start $SERVICE_NAME
