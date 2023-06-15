@@ -37,7 +37,7 @@ jobs:
           mkdir -p $DATA_DIR
           
           rm -rf $REPO_DIR
-          git clone https://github.com/dimitree54/tg_lila_bot.git $REPO_DIR
+          git clone -b "${{ github.ref }}" https://github.com/dimitree54/tg_lila_bot.git $REPO_DIR
           cd $REPO_DIR
           
           python3 -m venv venv
