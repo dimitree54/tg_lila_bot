@@ -1,9 +1,9 @@
 import os.path
 
-from langchain.agents import initialize_agent, AgentType, load_tools
+from langchain.agents import initialize_agent, AgentType, load_tools, AgentExecutor
 from langchain.chat_models import ChatOpenAI
-from langchain.memory import ConversationBufferMemory, FileChatMessageHistory
-
+from langchain.memory import FileChatMessageHistory, ConversationSummaryBufferMemory
+from langchain.memory.chat_memory import BaseChatMemory
 
 PREFIX = """You name is Lila, you are AI-friend of the user.
 It is important that user feels you are friend, not his assistant (you are equal in conversation).
@@ -16,19 +16,42 @@ class Lila:
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
 
-    def _load_memory(self, user_id: int) -> ConversationBufferMemory:
-        memory_path = os.path.join(self.save_path, f"{user_id}.json")
-        return ConversationBufferMemory(
+    def _get_chat_memory_path(self, user_id) -> str:
+        return os.path.join(self.save_path, f"{user_id}_chat.json")
+
+    def _get_summary_memory_path(self, user_id) -> str:
+        return os.path.join(self.save_path, f"{user_id}_summary.json")
+
+    def _load_short_term_memory(self, user_id: int) -> BaseChatMemory:
+        chat_memory_path = self._get_chat_memory_path(user_id)
+        summary_memory_path = self._get_summary_memory_path(user_id)
+        if os.path.isfile(summary_memory_path):
+            with open(summary_memory_path, "r") as f:
+                summary_memory = f.read()
+        else:
+            summary_memory = ""
+        llm = ChatOpenAI(model_name="gpt-3.5-turbo-0613", temperature=0)
+        return ConversationSummaryBufferMemory(
+            llm=llm, max_token_limit=6000,
             memory_key="chat_history", return_messages=True,
-            chat_memory=FileChatMessageHistory(memory_path)
+            chat_memory=FileChatMessageHistory(chat_memory_path),
+            moving_summary_buffer=summary_memory
         )
 
+    def _save_memory(self, user_id: int, memory: ConversationSummaryBufferMemory):
+        summary_memory_path = self._get_summary_memory_path(user_id)
+        with open(summary_memory_path, "w") as f:
+            f.write(memory.moving_summary_buffer)
+
     def forget(self, user_id: int):
-        memory = self._load_memory(user_id=user_id)
+        memory = self._load_short_term_memory(user_id=user_id)
         memory.clear()
+        summary_memory_path = self._get_summary_memory_path(user_id)
+        if os.path.isfile(summary_memory_path):
+            os.remove(summary_memory_path)
 
     @staticmethod
-    def _initialise_agent(memory: ConversationBufferMemory):
+    def _initialise_agent(memory: BaseChatMemory) -> AgentExecutor:
         llm = ChatOpenAI(model_name="gpt-4", temperature=0)
         tools = load_tools(["serpapi"], llm=llm)
         return initialize_agent(
@@ -44,7 +67,7 @@ class Lila:
 
     async def arun(self, user_id: int, request: str) -> str:
         try:
-            memory = self._load_memory(user_id=user_id)
+            memory = self._load_short_term_memory(user_id=user_id)
             agent = self._initialise_agent(memory=memory)
             answer = await agent.arun(input=request)
             return answer
