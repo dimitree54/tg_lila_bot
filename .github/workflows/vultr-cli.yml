@@ -19,9 +19,8 @@ jobs:
         key: ${{ secrets.VULTR_VM_SSH_KEY }}
         password: ${{ secrets.VULTR_VM_PASSWORD }}
         script: |
-          export GITHUB_REF=${{ GITHUB.REF }}
+          export GITHUB_REF=${{ GITHUB.REF_NAME }}
           echo $GITHUB_REF
-          echo ${$GITHUB_REF##*/}
           exit 1
           if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
             export SERVICE_NAME=tg_lila_bot
