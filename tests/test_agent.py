@@ -64,5 +64,17 @@ class TestMemory(TestCase):
         memory = self.load_memory(20)
         self.assertEqual(memory.load_memory_variables({})["chat_history"][0].content, self.fake_summary)
 
+    def test_date(self):
+        memory = self.load_memory()
+        self.add_test_messages(memory)
+        self.assertTrue("timestamp" in memory.load_memory_variables({})["chat_history"][0].additional_kwargs)
+
+    def test_date_savable(self):
+        memory = self.load_memory()
+        self.add_test_messages(memory)
+        date = memory.load_memory_variables({})["chat_history"][0].additional_kwargs["timestamp"]
+        memory = self.load_memory()
+        self.assertEqual(memory.load_memory_variables({})["chat_history"][0].additional_kwargs["timestamp"], date)
+
     def tearDown(self) -> None:
         shutil.rmtree(self.save_path)

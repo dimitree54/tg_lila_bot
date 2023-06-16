@@ -9,7 +9,7 @@ from langchain.schema import BaseMessage, messages_from_dict, messages_to_dict
 
 class ChatMessageHistoryWithDates(ChatMessageHistory):
     def add_message(self, message: BaseMessage) -> None:
-        message.additional_kwargs["timestamp"] = datetime.now()
+        message.additional_kwargs["timestamp"] = datetime.now().isoformat()
         super().add_message(message)
 
 
@@ -41,12 +41,12 @@ class SavableSummaryBufferMemoryWithDates(ConversationSummaryBufferMemory):
         return messages
 
     @staticmethod
-    def _load_chat_memory(chat_memory_path: str) -> ChatMessageHistory:
+    def _load_chat_memory(chat_memory_path: str) -> ChatMessageHistoryWithDates:
         if os.path.isfile(chat_memory_path):
             messages = SavableSummaryBufferMemoryWithDates._load_messages(chat_memory_path)
-            chat_memory = ChatMessageHistory(messages=messages)
+            chat_memory = ChatMessageHistoryWithDates(messages=messages)
         else:
-            chat_memory = ChatMessageHistory()
+            chat_memory = ChatMessageHistoryWithDates()
         return chat_memory
 
     @staticmethod
