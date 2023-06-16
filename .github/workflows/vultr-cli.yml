@@ -53,7 +53,7 @@ jobs:
           echo GOOGLE_APPLICATION_CREDENTIALS=$REPO_DIR/google-credentials.json >> $REPO_DIR/.env
           echo SAVE_PATH=$DATA_DIR >> $REPO_DIR/.env
           
-          cp $REPO_DIR/tg_lila_bot.service /etc/systemd/system/$SERVICE_NAME.service
+          cp $REPO_DIR/$SERVICE_NAME.service /etc/systemd/system/$SERVICE_NAME.service
           systemctl daemon-reload
           systemctl enable $SERVICE_NAME
           systemctl start $SERVICE_NAME
