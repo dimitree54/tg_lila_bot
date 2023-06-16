@@ -77,7 +77,7 @@ class Lila:
             moving_summary_buffer=summary_memory
         )
 
-    def _save_memory(self, user_id: int, memory: ConversationSummaryBufferMemory):
+    def _save_short_term_memory(self, user_id: int, memory: ConversationSummaryBufferMemory):
         self._save_chat_memory(user_id=user_id, chat_memory=memory.chat_memory)
         self._save_summary_memory(user_id=user_id, summary_memory=memory.moving_summary_buffer)
 
@@ -109,7 +109,7 @@ class Lila:
             memory = self._load_short_term_memory(user_id=user_id)
             agent = self._initialise_agent(memory=memory)
             answer = await agent.arun(input=request)
-            self._save_memory(user_id=user_id, memory=memory)
+            self._save_short_term_memory(user_id=user_id, memory=memory)
             return answer
         except Exception as e:
             return str(e)

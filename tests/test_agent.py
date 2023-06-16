@@ -29,7 +29,7 @@ class TestMemory(TestCase):
     def test_memory_savable(self):
         memory = self.agent._load_short_term_memory(self.test_user_id)
         self.add_test_messages(memory)
-        self.agent._save_memory(self.test_user_id, memory)
+        self.agent._save_short_term_memory(self.test_user_id, memory)
         memory = self.agent._load_short_term_memory(self.test_user_id)
         self.assertEqual(memory.load_memory_variables({})["chat_history"][0].content, "hi")
 
@@ -47,7 +47,7 @@ class TestMemory(TestCase):
         self.add_test_messages(memory)
         self.assertNotEqual(memory.load_memory_variables({})["chat_history"][0].content, "hi")
 
-        self.agent._save_memory(self.test_user_id, memory)
+        self.agent._save_short_term_memory(self.test_user_id, memory)
         memory_buffer = memory.load_memory_variables({})["chat_history"][0].content
         memory = self.agent._load_short_term_memory(self.test_user_id)
         self.assertEqual(memory.load_memory_variables({})["chat_history"][0].content, memory_buffer)
