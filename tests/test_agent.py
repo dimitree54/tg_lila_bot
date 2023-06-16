@@ -1,10 +1,8 @@
 import shutil
 import tempfile
 from unittest import TestCase
-from unittest.mock import MagicMock
 
 from dotenv import load_dotenv
-from langchain.memory import ConversationSummaryBufferMemory
 from langchain.memory.chat_memory import BaseChatMemory
 
 from agent import Lila
