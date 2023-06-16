@@ -19,6 +19,8 @@ class Lila:
 
     def _load_short_term_memory(self, user_id: int) -> SavableSummaryBufferMemoryWithDates:
         save_path = os.path.join(self.save_path, str(user_id))
+        if not os.path.isdir(save_path):
+            os.makedirs(save_path)
         llm = ChatOpenAI(model_name="gpt-3.5-turbo-0613", temperature=0)
         return SavableSummaryBufferMemoryWithDates.load(
             llm=llm, max_token_limit=6000,
