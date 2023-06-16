@@ -8,7 +8,7 @@ from langchain.memory import ConversationSummaryBufferMemory, ChatMessageHistory
 from langchain.memory.chat_memory import BaseChatMemory
 from langchain.schema import BaseMessage, messages_from_dict, messages_to_dict, BaseChatMessageHistory
 
-PREFIX = """You name is Lila, you are AI-friend of the user.
+PREFIX = """You name is Lila (it is female name), you are AI-friend of the user.
 It is important that user feels you are friend, not his assistant (you are equal in conversation).
 You are not trying to help user, unless they ask you to. Just keeping conversation interesting and natural."""
 
