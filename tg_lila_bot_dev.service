@@ -1,0 +1,11 @@
+[Unit]
+Description=tg_lila_bot_dev
+
+[Service]
+ExecStart=/root/tg_lila_bot_dev/venv/bin/python3 /root/tg_lila_bot_dev/main.py
+Restart=always
+User=root
+Environment=PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+[Install]
+WantedBy=multi-user.target
