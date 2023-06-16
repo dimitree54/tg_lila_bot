@@ -2,7 +2,7 @@
 Description=tg_lila_bot
 
 [Service]
-ExecStart=/root/tg_lila_bot/venv/bin/python3 /root/tg_lila_bot/main.py
+ExecStart=/bin/bash -c '${REPO_DIR}/venv/bin/python3 ${REPO_DIR}/main.py'
 Restart=always
 User=root
 Environment=PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
