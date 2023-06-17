@@ -7,7 +7,9 @@ import tiktoken
 from dotenv import load_dotenv
 from langchain.llms import FakeListLLM
 from langchain.memory.chat_memory import BaseChatMemory
+from langchain.schema import HumanMessage
 
+from chat_end_detector import ChatEndDetector
 from memory import SavableSummaryBufferMemoryWithDates
 
 
@@ -89,3 +91,15 @@ class TestMemory(TestCase):
 
     def tearDown(self) -> None:
         shutil.rmtree(self.save_path)
+
+
+class TestEndDetector(TestCase):
+    def setUp(self) -> None:
+        self.end_detector = ChatEndDetector()
+        self.chat_history = [
+            HumanMessage(content="hi", additional_kwargs={"timestamp": 0}),
+        ]
+
+    def test_end_detection(self):
+        end_detector = ChatEndDetector()
+
