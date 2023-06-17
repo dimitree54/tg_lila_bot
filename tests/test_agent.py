@@ -1,12 +1,23 @@
 import shutil
 import tempfile
+from typing import List
 from unittest import TestCase
 
+import tiktoken
 from dotenv import load_dotenv
 from langchain.llms import FakeListLLM
 from langchain.memory.chat_memory import BaseChatMemory
 
 from memory import SavableSummaryBufferMemoryWithDates
+
+
+class FakeListLLMTiktoken(FakeListLLM):
+    # Because of some bug with tokenizers, FakeListLLM too slow
+    #  (it downloads the tokenizer model every call)
+    #  so for testing we use tiktoken instead
+    def get_token_ids(self, text: str) -> List[int]:
+        enc = tiktoken.encoding_for_model("gpt-3.5-turbo")
+        return enc.encode(text)
 
 
 class TestMemory(TestCase):
@@ -23,7 +34,7 @@ class TestMemory(TestCase):
         memory.save_context({"input": "bye"}, {"output": "see you"})
 
     def load_memory(self, token_limit: int = 6000) -> SavableSummaryBufferMemoryWithDates:
-        llm = FakeListLLM(responses=[self.fake_summary])
+        llm = FakeListLLMTiktoken(responses=[self.fake_summary])
         return SavableSummaryBufferMemoryWithDates.load(
             llm=llm, max_token_limit=token_limit,
             memory_key="chat_history", return_messages=True,
