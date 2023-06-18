@@ -54,6 +54,7 @@ class Lila:
             memory = self._load_short_term_memory(user_id=user_id)
             is_new_chat = self.chat_end_detector.is_new_conversation(memory, request)
             if is_new_chat:
+                print(f"Automatically clearing memory for user {user_id}")
                 memory.clear()
             agent = self._initialise_agent(memory=memory)
             answer = await agent.arun(input=request)
