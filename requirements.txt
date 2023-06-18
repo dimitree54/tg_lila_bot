@@ -1,6 +1,6 @@
 openai==0.27.8
 python-dotenv==1.0.0
-langchain==0.0.201
+langchain==0.0.202
 pydantic==1.10.9
 pydub==0.25.1
 python-telegram-bot==20.3
@@ -10,3 +10,4 @@ google-search-results==2.4.2
 tiktoken==0.4.0
 speechkit==2.1.0
 grpcio-tools==1.49.0
+yid-langchain-extensions==0.4.9

@@ -1,32 +1,37 @@
-name: Python checks
+name: tests
 
 on: [push]
 
 jobs:
-  build:
-
+  flake8:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v2
-
+    - uses: actions/checkout@v3
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: 3.11
-
     - name: Install dependencies
       run: |
-        sudo apt-get install -y ffmpeg
         python -m pip install --upgrade pip
         pip install flake8
-        pip install -U pip setuptools wheel
-        pip install -r requirements.txt
-
     - name: Lint with flake8
       run: |
         flake8
-
+  tests:
+    needs: flake8
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+    - name: Install dependencies
+      run: |
+        sudo apt-get install -y ffmpeg
+        python -m pip install --upgrade pip setuptools wheel
+        pip install -r requirements.txt
     - name: Run unittest
       run: |
         printf '%s\n' '${{ secrets.GOOGLE_CREDENTIALS }}' > ~/google-credentials.json
