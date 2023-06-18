@@ -10,7 +10,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.llms import FakeListLLM
 from langchain.memory.chat_memory import BaseChatMemory
 
-from chat_end_detector import ChatEndDetector
+from chat_end_detector import SmartMemoryCleaner
 from memory import SavableSummaryBufferMemoryWithDates
 
 
@@ -99,21 +99,21 @@ class TestEndDetector(TestCase):
     def setUp(self) -> None:
         load_dotenv()
         self.save_path = tempfile.mkdtemp()
-        self.end_detector = ChatEndDetector()
+        self.end_detector = SmartMemoryCleaner()
         self.llm = ChatOpenAI(model_name="gpt-3.5-turbo-0613", temperature=0)
 
     def test_end1(self):
         memory = load_memory(self.llm, self.save_path)
         add_test_messages(memory)
         new_message = "What is the weather today?"
-        is_new_conversation = self.end_detector.is_new_conversation(memory, new_message)
+        is_new_conversation = self.end_detector._is_new_conversation(memory, new_message)
         self.assertTrue(is_new_conversation)
 
     def test_end2(self):
         memory = load_memory(self.llm, self.save_path)
         add_test_messages(memory)
         new_message = "hi"
-        is_new_conversation = self.end_detector.is_new_conversation(memory, new_message)
+        is_new_conversation = self.end_detector._is_new_conversation(memory, new_message)
         self.assertTrue(is_new_conversation)
 
     def test_continue1(self):
@@ -121,7 +121,7 @@ class TestEndDetector(TestCase):
         memory.save_context({"input": "hi"}, {"output": "whats up"})
         memory.save_context({"input": "not much you"}, {"output": "not much"})
         new_message = "bye"
-        is_new_conversation = self.end_detector.is_new_conversation(memory, new_message)
+        is_new_conversation = self.end_detector._is_new_conversation(memory, new_message)
         self.assertFalse(is_new_conversation)
 
     def test_continue2(self):
@@ -129,7 +129,7 @@ class TestEndDetector(TestCase):
         memory.save_context({"input": "hi"}, {"output": "whats up"})
         memory.save_context({"input": "not much you"}, {"output": "not much"})
         new_message = "What is the weather today?"
-        is_new_conversation = self.end_detector.is_new_conversation(memory, new_message)
+        is_new_conversation = self.end_detector._is_new_conversation(memory, new_message)
         self.assertFalse(is_new_conversation)
 
     def test_end3(self):
@@ -138,8 +138,15 @@ class TestEndDetector(TestCase):
         memory.save_context({"input": "not much you"}, {"output": "not much"})
         new_message = "hi"
         self.end_detector._get_hours_after_message = lambda x: 26
-        is_new_conversation = self.end_detector.is_new_conversation(memory, new_message)
+        is_new_conversation = self.end_detector._is_new_conversation(memory, new_message)
         self.assertTrue(is_new_conversation)
+
+    def test_clean(self):
+        memory = load_memory(self.llm, self.save_path)
+        add_test_messages(memory)
+        memory.save_context({"input": "What is the weather today?"}, {"output": "Rainy"})
+        self.end_detector.clean(memory)
+        self.assertEqual(len(memory.load_memory_variables({})["chat_history"]), 2)
 
     def tearDown(self) -> None:
         shutil.rmtree(self.save_path)

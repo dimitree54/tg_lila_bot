@@ -6,7 +6,6 @@ from telegram.ext import ApplicationBuilder, MessageHandler, CallbackContext, fi
 from agent import Lila
 from utils import ogg_to_mp3, mp3_to_text, text_to_mp3_multi_language
 
-
 INTRO = """This conversational bot is developed by Dmitrii Rashchenko.
 The bot will call itself Lila and pretend to be your friend.
 It is able to keep conversation, answer your questions, google things for you.
@@ -54,10 +53,12 @@ class TelegramBot:
                 await update.message.reply_text(answer)
             else:
                 await update.message.reply_voice(voice=mp3_file.name, caption=answer)
+            await self.lila.after_message(update.message.from_user.id)
 
     async def text_handler(self, update: Update, context: CallbackContext) -> None:  # noqa
         answer = await self.lila.arun(update.message.from_user.id, update.message.text)
         await update.message.reply_text(answer)
+        await self.lila.after_message(update.message.from_user.id)
 
     async def command_handler(self, update: Update, context: CallbackContext) -> None:  # noqa
         if update.message.text == "/forget":

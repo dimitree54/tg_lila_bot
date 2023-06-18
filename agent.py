@@ -6,7 +6,7 @@ from langchain.agents import initialize_agent, AgentType, load_tools, AgentExecu
 from langchain.chat_models import ChatOpenAI
 from langchain.memory.chat_memory import BaseChatMemory
 
-from chat_end_detector import ChatEndDetector
+from chat_end_detector import SmartMemoryCleaner
 from memory import SavableSummaryBufferMemoryWithDates
 
 PREFIX = """You name is Lila (it is female name), you are AI-friend of the user.
@@ -21,7 +21,7 @@ class Lila:
         self.save_path = save_path
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
-        self.chat_end_detector = ChatEndDetector()
+        self.memory_cleaner = SmartMemoryCleaner()
 
     def _load_short_term_memory(self, user_id: int) -> SavableSummaryBufferMemoryWithDates:
         save_path = os.path.join(self.save_path, str(user_id))
@@ -57,12 +57,12 @@ class Lila:
     async def arun(self, user_id: int, request: str) -> str:
         try:
             memory = self._load_short_term_memory(user_id=user_id)
-            is_new_chat = self.chat_end_detector.is_new_conversation(memory, request)
-            if is_new_chat:
-                print(f"Automatically clearing memory for user {user_id}")
-                memory.clear()
             agent = self._initialise_agent(memory=memory)
             answer = await agent.arun(input=request)
             return answer
         except Exception as e:
             return str(e)
+
+    async def after_message(self, user_id: int):
+        memory = self._load_short_term_memory(user_id=user_id)
+        await self.memory_cleaner.clean(memory)

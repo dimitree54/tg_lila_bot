@@ -31,7 +31,7 @@ Your task is to classify that new message into one of the following categories:
 Consider messages content and delay between messages"""
 
 
-class ChatEndDetector:
+class SmartMemoryCleaner:
     def __init__(self):
         self.llm = ChatOpenAI(model_name="gpt-3.5-turbo-0613", temperature=0)
         self.classes = [
@@ -85,20 +85,19 @@ class ChatEndDetector:
         )
         return prompt_messages
 
-    def is_new_conversation(self, memory: ConversationSummaryBufferMemory, new_message: str) -> bool:
+    def _is_new_conversation(self, memory: ConversationSummaryBufferMemory, new_message: str) -> bool:
         if len(memory.chat_memory.messages) < 2:
             return False
 
-        compressed_memory = deepcopy(memory)
-        compressed_memory.max_token_limit = 3  # empty chat takes 3 tokens
-        compressed_memory.prune()
-
         last_message = memory.chat_memory.messages[-1]
+        memory.max_token_limit = 3  # empty chat takes 3 tokens
+        memory.prune()
+
         delay_hours = self._get_hours_after_message(last_message)
         if delay_hours > 6:
             return True
         messages = self._format_messages(
-            summary=compressed_memory.moving_summary_buffer,
+            summary=memory.moving_summary_buffer,
             delay_hours=delay_hours,
             last_message=last_message.content,
             new_message=new_message
@@ -106,3 +105,12 @@ class ChatEndDetector:
         prediction = self.llm(messages).content
         class_index = self.output_parser.parse(prediction)
         return class_index == 1
+
+    def clean(self, memory: ConversationSummaryBufferMemory):
+        previous_chat_memory = deepcopy(memory)
+        last_answer = previous_chat_memory.chat_memory.messages.pop().content
+        last_request = previous_chat_memory.chat_memory.messages.pop().content
+        is_new_conversation = self._is_new_conversation(previous_chat_memory, last_request)
+        if is_new_conversation:
+            memory.clear()
+            memory.save_context({"input": last_request}, {"output": last_answer})
