@@ -85,7 +85,7 @@ class SmartMemoryCleaner:
         )
         return prompt_messages
 
-    def _is_new_conversation(self, memory: ConversationSummaryBufferMemory, new_message: str) -> bool:
+    async def _is_new_conversation(self, memory: ConversationSummaryBufferMemory, new_message: str) -> bool:
         if len(memory.chat_memory.messages) < 2:
             return False
 
@@ -102,15 +102,15 @@ class SmartMemoryCleaner:
             last_message=last_message.content,
             new_message=new_message
         )
-        prediction = self.llm(messages).content
-        class_index = self.output_parser.parse(prediction)
+        prediction = await self.llm.apredict_messages(messages)
+        class_index = self.output_parser.parse(prediction.content)
         return class_index == 1
 
-    def clean(self, memory: ConversationSummaryBufferMemory):
+    async def clean(self, memory: ConversationSummaryBufferMemory):
         previous_chat_memory = deepcopy(memory)
         last_answer = previous_chat_memory.chat_memory.messages.pop().content
         last_request = previous_chat_memory.chat_memory.messages.pop().content
-        is_new_conversation = self._is_new_conversation(previous_chat_memory, last_request)
+        is_new_conversation = await self._is_new_conversation(previous_chat_memory, last_request)
         if is_new_conversation:
             memory.clear()
             memory.save_context({"input": last_request}, {"output": last_answer})
