@@ -1,5 +1,7 @@
 import os.path
+from datetime import datetime
 
+from langchain import PromptTemplate
 from langchain.agents import initialize_agent, AgentType, load_tools, AgentExecutor
 from langchain.chat_models import ChatOpenAI
 from langchain.memory.chat_memory import BaseChatMemory
@@ -9,7 +11,9 @@ from memory import SavableSummaryBufferMemoryWithDates
 
 PREFIX = """You name is Lila (it is female name), you are AI-friend of the user.
 It is important that user feels you are friend, not his assistant (you are equal in conversation).
-You are not trying to help user, unless they ask you to. Just keeping conversation interesting and natural."""
+You are not trying to help user, unless they ask you to. Just keeping conversation interesting and natural.
+Your conversation is happening in the Telegram messenger. 
+Current date time is {date}"""
 
 
 class Lila:
@@ -45,7 +49,8 @@ class Lila:
             agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
             memory=memory,
             agent_kwargs={
-                "system_message": PREFIX,
+                "system_message": PromptTemplate.from_template(PREFIX).format(
+                    date=datetime.now().strftime("%Y-%m-%d %H:%M")),
             }
         )
 
