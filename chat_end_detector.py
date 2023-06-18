@@ -114,3 +114,4 @@ class SmartMemoryCleaner:
         if is_new_conversation:
             memory.clear()
             memory.save_context({"input": last_request}, {"output": last_answer})
+            print("Memory auto-cleaned")
