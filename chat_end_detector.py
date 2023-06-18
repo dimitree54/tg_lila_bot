@@ -37,22 +37,23 @@ class ChatEndDetector:
         self.classes = [
             Class(
                 name="CONTINUE",
-                description="the new message is a continuation of the same conversation"
+                description="user wants to continue discussing the topic from the previous conversation"
             ),
             Class(
                 name="NEW",
-                description="the new message is a start of new topic or a new conversation not related to previous one"
+                description="user wants to discuss a new topic, not related to the topic of the previous conversation"
             ),
         ]
         self.output_parser = ClassParser.from_extra_thoughts(
             extra_thoughts=[
                 Thought(
                     name="Evidences for CONTINUE",
-                    description="Evidences that new message is a natural continuation of the provided conversation"
+                    description="Evidences that new message is about the same topic as the previous conversation"
                 ),
                 Thought(
                     name="Evidences for NEW",
-                    description="Evidences that new message does not belong to the provided conversation"
+                    description="Evidences that new message is about a new topic, "
+                                "not related to the previous conversation"
                 ),
                 Thought(
                     name="Thoughts",
