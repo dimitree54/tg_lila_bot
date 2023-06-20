@@ -102,7 +102,7 @@ class SmartMemoryCleaner:
             last_message=last_message.content,
             new_message=new_message
         )
-        prediction = await self.llm.apredict_messages(messages)
+        prediction = await self.llm.apredict_messages(messages, stop=self.output_parser.stop_sequences)
         class_index = self.output_parser.parse(prediction.content)
         return class_index == 1
 
