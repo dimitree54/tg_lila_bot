@@ -30,7 +30,7 @@ class Lila:
             os.makedirs(save_path)
         self.memory_cleaner = SmartMemoryCleaner()
 
-        self.llm = ChatOpenAI(model_name="gpt-4", temperature=0)
+        self.llm = ChatOpenAI(model_name="gpt-4-0613", temperature=0)
         final_answer_tool = FinalAnswerTool()
         self.tools = load_tools(["serpapi"], llm=self.llm) + [final_answer_tool]
         self.output_parser = ActionParser.from_extra_thoughts([
