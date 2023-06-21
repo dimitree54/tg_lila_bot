@@ -57,7 +57,7 @@ class TelegramBot:
 
     async def text_handler(self, update: Update, context: CallbackContext) -> None:  # noqa
         answer = await self.lila.arun(update.message.from_user.id, update.message.text)
-        await update.message.reply_text(answer)
+        await update.message.reply_text(answer, parse_mode='Markdown')
         await self.lila.after_message(update.message.from_user.id)
 
     async def command_handler(self, update: Update, context: CallbackContext) -> None:  # noqa
