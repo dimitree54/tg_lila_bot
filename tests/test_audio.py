@@ -1,11 +1,11 @@
 import os
 from unittest import TestCase
-from gtts import gTTS
 
 import openai
 from dotenv import load_dotenv
+from gtts import gTTS
 
-from utils import mp3_to_text
+from speech.utils import mp3_to_text
 
 
 class TestAudio(TestCase):

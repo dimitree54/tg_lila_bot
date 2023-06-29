@@ -1,10 +1,10 @@
 import tempfile
 
-from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, CallbackContext, filters, CommandHandler
 
-from agent import Lila
-from utils import ogg_to_mp3, mp3_to_text, text_to_mp3_multi_language
+from agents.friend_lila import Lila
+from speech.utils import ogg_to_mp3, mp3_to_text, text_to_mp3_multi_language
+from telegram import Update
 
 INTRO = """This conversational bot is developed by Dmitrii Rashchenko.
 The bot will call itself Lila and pretend to be your friend.
