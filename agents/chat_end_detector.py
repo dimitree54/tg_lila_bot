@@ -109,7 +109,7 @@ class SmartMemoryCleaner:
         class_index = self.output_parser.parse(prediction.content)
         return class_index == 1
 
-    async def compress_stm(self, memory: ConversationSummaryBufferMemory) -> Optional[str]:
+    async def compress_short_term_memory(self, memory: ConversationSummaryBufferMemory) -> Optional[str]:
         if len(memory.chat_memory.messages) < 2:
             return None
         last_message = memory.chat_memory.messages[-3]
