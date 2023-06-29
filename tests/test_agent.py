@@ -10,8 +10,8 @@ from langchain.chat_models import ChatOpenAI
 from langchain.llms import FakeListLLM
 from langchain.memory.chat_memory import BaseChatMemory
 
-from agents.chat_end_detector import SmartMemoryCleaner
 from agents.memory import SavableSummaryBufferMemoryWithDates
+from agents.stm_cleaner import ShortTermMemoryCleaner
 
 
 def add_test_messages(memory: BaseChatMemory):
@@ -99,7 +99,7 @@ class TestEndDetector(IsolatedAsyncioTestCase):
     def setUp(self) -> None:
         load_dotenv()
         self.save_path = tempfile.mkdtemp()
-        self.end_detector = SmartMemoryCleaner()
+        self.end_detector = ShortTermMemoryCleaner()
         self.llm = ChatOpenAI(model_name="gpt-3.5-turbo-0613", temperature=0)
 
     async def test_end1(self):
