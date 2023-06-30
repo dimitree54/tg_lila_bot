@@ -114,11 +114,8 @@ class ShortTermMemoryCleaner:
             return None
         last_message = memory.chat_memory.messages[-3]
         last_request = memory.chat_memory.messages[-2].content
-        last_answer = memory.chat_memory.messages[-1].content
         previous_conversation_summary = self.get_previous_conversation_summary(memory)
         is_new_conversation = await self._is_new_conversation(previous_conversation_summary, last_message, last_request)
         if is_new_conversation:
-            memory.clear()
-            memory.save_context({"input": last_request}, {"output": last_answer})
             return previous_conversation_summary
         return None

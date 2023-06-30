@@ -19,7 +19,7 @@ from yid_langchain_extensions.output_parser.thoughts_json_parser import Thought
 from yid_langchain_extensions.tools.utils import format_tools, format_tool_names, FinalAnswerTool
 
 from agents.stm_cleaner import ShortTermMemoryCleaner
-from agents.stm_savable import SavableSummaryBufferMemoryWithDates
+from agents.stm_savable import SavableSummaryBufferMemoryWithDates, SavableVeryImportantMemory
 
 PREFIX = """You name is Lila (it is female name), you are AI-friend of the user.
 It is important that user feels you are friend, not his assistant (you are equal in conversation).
@@ -27,6 +27,13 @@ You are not trying to help user, unless they ask you to. Just keeping conversati
 Your conversation is happening in the Telegram messenger.
 You are using markdown for answers, so make sure to always escape all special characters.
 Current date time is {{date}}"""
+
+SUMMARIZER_PREFIX = """You need to extract info about user from the conversation and update existing info.
+Example of information that you need to extract: name, age, sex, date of birth, hobbies, friends' names and so on.
+In other words you need to extract any information that will help to make conversation more personal,
+ so user feels you are his friend, that you listen to him and care.
+
+For reference, today is {date}."""
 
 
 class Lila:
@@ -53,7 +60,7 @@ class Lila:
 
     def _get_memory_lock(self, user_id: int) -> Lock:
         with self._locks_lock:
-            return self._memory_locks[user_id]
+            return self._memory_locks[user_id]  # noqa
 
     def _get_user_dir(self, user_id: int) -> str:
         user_dir = os.path.join(self.save_path, str(user_id))
@@ -70,6 +77,20 @@ class Lila:
                 llm=self.short_term_memory_llm, max_token_limit=6000,
                 memory_key="chat_history", return_messages=True,
                 save_path=self._get_user_dir(user_id=user_id)
+            )
+
+    def _load_memory_about_user(self, user_id: int) -> SavableVeryImportantMemory:
+        with self._get_memory_lock(user_id=user_id):
+            messages = [
+                SystemMessage(content=SUMMARIZER_PREFIX.format(date=self._now())),
+                HumanMessagePromptTemplate.from_template("Existing info about user:\n{{summary}}", "jinja2"),
+                HumanMessagePromptTemplate.from_template("New lines of conversation:\n{{new_lines}}", "jinja2"),
+                SystemMessage(content="You have to answer with updated info about user and nothing else."),
+            ]
+            return SavableVeryImportantMemory.load(
+                llm=self.short_term_memory_llm,
+                save_path=self._get_user_dir(user_id=user_id),
+                summarizer_prompt=ChatPromptTemplate.from_messages(messages=messages),
             )
 
     def _load_long_term_memory(self, user_id: int) -> Optional[FAISS]:
@@ -94,8 +115,10 @@ class Lila:
 
     def forget(self, user_id: int):
         short_term_memory = self._load_short_term_memory(user_id=user_id)
+        memory_about_user = self._load_memory_about_user(user_id=user_id)
         with self._get_memory_lock(user_id=user_id):
             short_term_memory.clear()
+            memory_about_user.clear()
             ltm_path = self._get_user_ltm_path(user_id=user_id)
             if os.path.exists(ltm_path):
                 shutil.rmtree(ltm_path)
@@ -111,18 +134,34 @@ class Lila:
             short_term_memory.return_messages = True
             relevant_document = long_term_memory.similarity_search(short_term_context, k=1)[0]
             date = datetime.fromisoformat(relevant_document.metadata["date"]).strftime('%Y-%m-%d')
-            thought = f"Thought (user does not see it):\n" \
+            thought = "Thought (user does not see it):\n" \
                       f"Hm, that reminds me another conversation I had {date} with user:\n" \
                       f"{relevant_document.page_content}"
             return thought
 
+    def _get_relevant_memory_about_user(self, user_id: int, memory_about_user: SavableVeryImportantMemory) -> str:
+        relevant_memory_about_user = "Thought (user does not see it):\n" \
+                                     "What I know about user so far:\n"
+        with self._get_memory_lock(user_id=user_id):
+            if memory_about_user.buffer == "":
+                relevant_memory_about_user += "Nothing"
+            else:
+                relevant_memory_about_user += memory_about_user.buffer
+        return relevant_memory_about_user
+
+    @staticmethod
+    def _now() -> str:
+        return datetime.now().strftime("%Y-%m-%d %H:%M")
+
     def _initialise_agent(
-            self, user_id: int, short_term_memory: BaseChatMemory, long_term_memory: Optional[FAISS]) -> AgentExecutor:
+            self, user_id: int, short_term_memory: BaseChatMemory, memory_about_user: SavableVeryImportantMemory,
+            long_term_memory: Optional[FAISS]) -> AgentExecutor:
         system_message = PromptTemplate.from_template(PREFIX, template_format="jinja2").format(
-            date=datetime.now().strftime("%Y-%m-%d %H:%M")
+            date=self._now()
         )
         messages = [
             SystemMessage(content=system_message),
+            AIMessage(content=self._get_relevant_memory_about_user(user_id, memory_about_user)),
             MessagesPlaceholder(variable_name="chat_history"),
             HumanMessagePromptTemplate.from_template("{{input}}", "jinja2"),
         ]
@@ -144,14 +183,25 @@ class Lila:
 
     async def arun(self, user_id: int, request: str) -> str:
         short_term_memory = self._load_short_term_memory(user_id=user_id)
+        memory_about_user = self._load_memory_about_user(user_id=user_id)
         long_term_memory = self._load_long_term_memory(user_id=user_id)
-        agent = self._initialise_agent(user_id, short_term_memory, long_term_memory)
+        agent = self._initialise_agent(user_id, short_term_memory, memory_about_user, long_term_memory)
         answer = await agent.arun(input=request)
         return answer
 
+    @staticmethod
+    def _clear_short_term_memory(memory: BaseChatMemory):
+        last_request = memory.chat_memory.messages[-2].content
+        last_answer = memory.chat_memory.messages[-1].content
+        memory.clear()
+        memory.save_context({"input": last_request}, {"output": last_answer})
+
     async def after_message(self, user_id: int):
         short_term_memory = self._load_short_term_memory(user_id=user_id)
+        memory_about_user = self._load_memory_about_user(user_id=user_id)
         new_long_term_memory = await self.short_term_memory_cleaner.compress(short_term_memory)
         if new_long_term_memory is not None:
             print(f"Adding to long term memory of user {user_id}: {new_long_term_memory}")
             self._add_to_long_term_memory(user_id=user_id, new_long_term_memory=new_long_term_memory)
+            memory_about_user.update(short_term_memory.load_memory_variables({})["chat_history"])
+            self._clear_short_term_memory(memory=short_term_memory)

@@ -144,7 +144,6 @@ class TestShortTermMemoryCleaner(IsolatedAsyncioTestCase):
         add_test_messages(memory)
         memory.save_context({"input": "What is the weather today?"}, {"output": "Rainy"})
         summary = await self.cleaner.compress(memory)
-        self.assertEqual(len(memory.load_memory_variables({})["chat_history"]), 2)
         self.assertIsNotNone(summary)
 
     async def test_not_compress(self):
