@@ -10,8 +10,8 @@ from langchain.chat_models import ChatOpenAI
 from langchain.llms import FakeListLLM
 from langchain.memory.chat_memory import BaseChatMemory
 
-from agents.memory import SavableSummaryBufferMemoryWithDates
 from agents.stm_cleaner import ShortTermMemoryCleaner
+from agents.stm_savable import SavableSummaryBufferMemoryWithDates
 
 
 def add_test_messages(memory: BaseChatMemory):
