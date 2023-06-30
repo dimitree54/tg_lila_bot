@@ -32,7 +32,7 @@ SUMMARIZER_PREFIX = """You need to extract info about user from the conversation
 Example of information that you need to extract: name, age, sex, date of birth, hobbies, friends' names and so on.
 In other words you need to extract any information that will help to make conversation more personal,
  so user feels you are his friend, that you listen to him and care.
- 
+
 For reference, today is {date}."""
 
 
@@ -134,14 +134,14 @@ class Lila:
             short_term_memory.return_messages = True
             relevant_document = long_term_memory.similarity_search(short_term_context, k=1)[0]
             date = datetime.fromisoformat(relevant_document.metadata["date"]).strftime('%Y-%m-%d')
-            thought = f"Thought (user does not see it):\n" \
+            thought = "Thought (user does not see it):\n" \
                       f"Hm, that reminds me another conversation I had {date} with user:\n" \
                       f"{relevant_document.page_content}"
             return thought
 
     def _get_relevant_memory_about_user(self, user_id: int, memory_about_user: SavableVeryImportantMemory) -> str:
-        relevant_memory_about_user = f"Thought (user does not see it):\n" \
-                                     f"What I know about user so far:\n"
+        relevant_memory_about_user = "Thought (user does not see it):\n" \
+                                     "What I know about user so far:\n"
         with self._get_memory_lock(user_id=user_id):
             if memory_about_user.buffer == "":
                 relevant_memory_about_user += "Nothing"
