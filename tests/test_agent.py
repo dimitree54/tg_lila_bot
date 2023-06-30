@@ -141,12 +141,20 @@ class TestEndDetector(IsolatedAsyncioTestCase):
         is_new_conversation = await self.end_detector._is_new_conversation(memory, new_message)
         self.assertTrue(is_new_conversation)
 
-    async def test_clean(self):
+    async def test_compress(self):
         memory = load_memory(self.llm, self.save_path)
         add_test_messages(memory)
         memory.save_context({"input": "What is the weather today?"}, {"output": "Rainy"})
-        await self.end_detector.clean(memory)
+        summary = await self.end_detector.compress(memory)
         self.assertEqual(len(memory.load_memory_variables({})["chat_history"]), 2)
+        self.assertIsNotNone(summary)
+
+    async def test_not_compress(self):
+        memory = load_memory(self.llm, self.save_path)
+        memory.save_context({"input": "What is the weather today?"}, {"output": "Rainy"})
+        summary = await self.end_detector.compress(memory)
+        self.assertEqual(len(memory.load_memory_variables({})["chat_history"]), 2)
+        self.assertIsNone(summary)
 
     def tearDown(self) -> None:
         shutil.rmtree(self.save_path)

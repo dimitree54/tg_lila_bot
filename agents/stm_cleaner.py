@@ -110,7 +110,7 @@ class ShortTermMemoryCleaner:
         return class_index == 1
 
     async def compress(self, memory: ConversationSummaryBufferMemory) -> Optional[str]:
-        if len(memory.chat_memory.messages) < 2:
+        if len(memory.chat_memory.messages) < 3:
             return None
         last_message = memory.chat_memory.messages[-3]
         last_request = memory.chat_memory.messages[-2].content
