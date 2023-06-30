@@ -14,8 +14,8 @@ Its functionality will be extended in the future.
 The bot is powered by OpenAI GPT-4 large language model.
 It may accidentally produce some false, misleading or offensive content, be aware.
 
-Your chat will be stored on my server Vultr. You can delete it by sending /forget command.
-Use /forget command to reset the bot, for example when you change topic of conversation, or if there is an error.
+Your chat will be stored on my server Vultr.
+Use /forget command to make bot forget everything about you (it will be deleted from server).
 
 You can find the source code of the bot [here](https://github.com/dimitree54/tg_lila_bot).
 
