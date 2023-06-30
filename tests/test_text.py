@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from dotenv import load_dotenv
 
-from language_detector import LanguageDetector, TTSLanguage
+from speech.language_detector import LanguageDetector, TTSLanguage
 
 
 class TestText(TestCase):

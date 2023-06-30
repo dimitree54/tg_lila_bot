@@ -1,6 +1,6 @@
 from copy import deepcopy
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationSummaryBufferMemory
@@ -31,7 +31,7 @@ Your task is to classify that new message into one of the following categories:
 Consider messages content and delay between messages"""
 
 
-class SmartMemoryCleaner:
+class ShortTermMemoryCleaner:
     def __init__(self):
         self.llm = ChatOpenAI(model_name="gpt-3.5-turbo-0613", temperature=0)
         self.classes = [
@@ -85,19 +85,22 @@ class SmartMemoryCleaner:
         )
         return prompt_messages
 
-    async def _is_new_conversation(self, memory: ConversationSummaryBufferMemory, new_message: str) -> bool:
-        if len(memory.chat_memory.messages) < 2:
-            return False
+    @staticmethod
+    def get_previous_conversation_summary(memory: ConversationSummaryBufferMemory) -> str:
+        previous_chat_memory = deepcopy(memory)
+        previous_chat_memory.chat_memory.messages.pop()
+        previous_chat_memory.chat_memory.messages.pop()
+        previous_chat_memory.max_token_limit = 3  # empty chat takes 3 tokens
+        previous_chat_memory.prune()
+        return previous_chat_memory.moving_summary_buffer
 
-        last_message = memory.chat_memory.messages[-1]
-        memory.max_token_limit = 3  # empty chat takes 3 tokens
-        memory.prune()
-
+    async def _is_new_conversation(
+            self, previous_conversation_summary: str, last_message: BaseMessage, new_message: str) -> bool:
         delay_hours = self._get_hours_after_message(last_message)
         if delay_hours > 6:
             return True
         messages = self._format_messages(
-            summary=memory.moving_summary_buffer,
+            summary=previous_conversation_summary,
             delay_hours=delay_hours,
             last_message=last_message.content,
             new_message=new_message
@@ -106,12 +109,16 @@ class SmartMemoryCleaner:
         class_index = self.output_parser.parse(prediction.content)
         return class_index == 1
 
-    async def clean(self, memory: ConversationSummaryBufferMemory):
-        previous_chat_memory = deepcopy(memory)
-        last_answer = previous_chat_memory.chat_memory.messages.pop().content
-        last_request = previous_chat_memory.chat_memory.messages.pop().content
-        is_new_conversation = await self._is_new_conversation(previous_chat_memory, last_request)
+    async def compress(self, memory: ConversationSummaryBufferMemory) -> Optional[str]:
+        if len(memory.chat_memory.messages) < 3:
+            return None
+        last_message = memory.chat_memory.messages[-3]
+        last_request = memory.chat_memory.messages[-2].content
+        last_answer = memory.chat_memory.messages[-1].content
+        previous_conversation_summary = self.get_previous_conversation_summary(memory)
+        is_new_conversation = await self._is_new_conversation(previous_conversation_summary, last_message, last_request)
         if is_new_conversation:
             memory.clear()
             memory.save_context({"input": last_request}, {"output": last_answer})
-            print("Memory auto-cleaned")
+            return previous_conversation_summary
+        return None

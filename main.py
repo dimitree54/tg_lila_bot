@@ -3,8 +3,8 @@ import os
 import openai
 from dotenv import load_dotenv
 
-from agent import Lila
-from tg_bot import TelegramBot
+from agents.friend_lila import Lila
+from telegram_bot.tg_bot import TelegramBot
 
 load_dotenv()
 openai.api_key = os.environ["OPENAI_API_KEY"]

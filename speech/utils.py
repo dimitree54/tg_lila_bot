@@ -7,7 +7,7 @@ from gtts import gTTS
 from pydub import AudioSegment
 from speechkit import Session, SpeechSynthesis
 
-from language_detector import TTSLanguage, LanguageDetector
+from speech.language_detector import TTSLanguage, LanguageDetector
 
 
 def ogg_to_mp3(ogg_path, mp3_path):

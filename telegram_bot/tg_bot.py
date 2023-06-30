@@ -3,8 +3,8 @@ import tempfile
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, CallbackContext, filters, CommandHandler
 
-from agent import Lila
-from utils import ogg_to_mp3, mp3_to_text, text_to_mp3_multi_language
+from agents.friend_lila import Lila
+from speech.utils import ogg_to_mp3, mp3_to_text, text_to_mp3_multi_language
 
 INTRO = """This conversational bot is developed by Dmitrii Rashchenko.
 The bot will call itself Lila and pretend to be your friend.
@@ -14,8 +14,8 @@ Its functionality will be extended in the future.
 The bot is powered by OpenAI GPT-4 large language model.
 It may accidentally produce some false, misleading or offensive content, be aware.
 
-Your chat will be stored on my server Vultr. You can delete it by sending /forget command.
-Use /forget command to reset the bot, for example when you change topic of conversation, or if there is an error.
+Your chat will be stored on my server Vultr.
+Use /forget command to make bot forget everything about you (it will be deleted from server).
 
 You can find the source code of the bot [here](https://github.com/dimitree54/tg_lila_bot).
 
