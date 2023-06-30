@@ -95,64 +95,62 @@ class TestMemory(TestCase):
         shutil.rmtree(self.save_path)
 
 
-class TestEndDetector(IsolatedAsyncioTestCase):
+class TestShortTermMemoryCleaner(IsolatedAsyncioTestCase):
     def setUp(self) -> None:
         load_dotenv()
         self.save_path = tempfile.mkdtemp()
-        self.end_detector = ShortTermMemoryCleaner()
+        self.cleaner = ShortTermMemoryCleaner()
         self.llm = ChatOpenAI(model_name="gpt-3.5-turbo-0613", temperature=0)
 
     async def test_end1(self):
         memory = load_memory(self.llm, self.save_path)
         add_test_messages(memory)
-        new_message = "What is the weather today?"
-        is_new_conversation = await self.end_detector._is_new_conversation(memory, new_message)
-        self.assertTrue(is_new_conversation)
+        memory.save_context({"input": "What is the weather today?"}, {"output": "Rainy"})
+        summary = await self.cleaner.compress(memory)
+        self.assertIsNotNone(summary)
 
     async def test_end2(self):
         memory = load_memory(self.llm, self.save_path)
         add_test_messages(memory)
-        new_message = "hi"
-        is_new_conversation = await self.end_detector._is_new_conversation(memory, new_message)
-        self.assertTrue(is_new_conversation)
+        memory.save_context({"input": "hi"}, {"output": "hi"})
+        summary = await self.cleaner.compress(memory)
+        self.assertIsNotNone(summary)
 
     async def test_continue1(self):
         memory = load_memory(self.llm, self.save_path)
-        memory.save_context({"input": "hi"}, {"output": "whats up"})
-        memory.save_context({"input": "not much you"}, {"output": "not much"})
-        new_message = "bye"
-        is_new_conversation = await self.end_detector._is_new_conversation(memory, new_message)
-        self.assertFalse(is_new_conversation)
+        add_test_messages(memory)
+        summary = await self.cleaner.compress(memory)
+        self.assertIsNone(summary)
 
     async def test_continue2(self):
         memory = load_memory(self.llm, self.save_path)
         memory.save_context({"input": "hi"}, {"output": "whats up"})
         memory.save_context({"input": "not much you"}, {"output": "not much"})
-        new_message = "What is the weather today?"
-        is_new_conversation = await self.end_detector._is_new_conversation(memory, new_message)
-        self.assertFalse(is_new_conversation)
+        memory.save_context({"input": "What is the weather today?"}, {"output": "Rainy"})
+        summary = await self.cleaner.compress(memory)
+        self.assertIsNone(summary)
 
     async def test_end3(self):
         memory = load_memory(self.llm, self.save_path)
         memory.save_context({"input": "hi"}, {"output": "whats up"})
         memory.save_context({"input": "not much you"}, {"output": "not much"})
-        new_message = "hi"
-        self.end_detector._get_hours_after_message = lambda x: 26
-        is_new_conversation = await self.end_detector._is_new_conversation(memory, new_message)
-        self.assertTrue(is_new_conversation)
+        memory.save_context({"input": "hi"}, {"output": "hi"})
+        self.cleaner._get_hours_after_message = lambda x: 26
+        summary = await self.cleaner.compress(memory)
+        self.assertIsNotNone(summary)
 
     async def test_compress(self):
         memory = load_memory(self.llm, self.save_path)
         add_test_messages(memory)
         memory.save_context({"input": "What is the weather today?"}, {"output": "Rainy"})
-        summary = await self.end_detector.compress(memory)
+        summary = await self.cleaner.compress(memory)
         self.assertEqual(len(memory.load_memory_variables({})["chat_history"]), 2)
         self.assertIsNotNone(summary)
 
     async def test_not_compress(self):
         memory = load_memory(self.llm, self.save_path)
         memory.save_context({"input": "What is the weather today?"}, {"output": "Rainy"})
-        summary = await self.end_detector.compress(memory)
+        summary = await self.cleaner.compress(memory)
         self.assertEqual(len(memory.load_memory_variables({})["chat_history"]), 2)
         self.assertIsNone(summary)
 
