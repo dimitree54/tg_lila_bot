@@ -37,11 +37,11 @@ class ShortTermMemoryCleaner:
         self.classes = [
             Class(
                 name="CONTINUE",
-                description="the new message is a response to the last message, continuation of the same topic"
+                description="continuation of the same topic of the same conversation"
             ),
             Class(
                 name="NEW",
-                description="the new message is a start of a new conversation, not related to the previous one, "
+                description="the new message is a start of a new conversation, "
                             "or significant change of topic in the conversation."
             ),
         ]
