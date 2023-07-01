@@ -11,7 +11,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.memory.chat_memory import BaseChatMemory
 from langchain.prompts import MessagesPlaceholder, \
-    HumanMessagePromptTemplate, ChatPromptTemplate
+    HumanMessagePromptTemplate, ChatPromptTemplate, SystemMessagePromptTemplate
 from langchain.schema import SystemMessage, AIMessage
 from yid_langchain_extensions.agent.simple_agent import SimpleAgent
 from yid_langchain_extensions.output_parser.action_parser import ActionParser
@@ -28,12 +28,31 @@ Your conversation is happening in the Telegram messenger.
 You are using markdown for answers, so make sure to always escape all special characters.
 Current date time is {{date}}"""
 
-SUMMARIZER_PREFIX = """You need to extract info about user from the conversation and update existing info.
-Example of information that you need to extract: name, age, sex, date of birth, hobbies, friends' names and so on.
-In other words you need to extract any information that will help to make conversation more personal,
- so user feels you are his friend, that you listen to him and care.
+SUMMARIZER_SUFFIX = """It was a conversation between AI and human.
+You need to extract any information about the user that will help to make conversation with him more personal,
+ so user feels that AI are his friend, that AI listen to him and care.
+But do not include conversation details, its topic, what were discussed, etc.
+Do not include any information that is temporary relevant, for example, plans for the day.
+Only persistent information about user as person that does not change often.
 
-For reference, today is {date}."""
+Using that extracted information, update what you already know about the user with new information.
+
+For reference, today is {date}.
+
+Example of relevant information about user:
+User name is Poul, he lives in Argentina, he is 25 years old, he likes to play football, he has a dog named Rex.
+He speak Spanish and want AI to speak Spanish too. He does not like too much questions from AI.
+His birthday is 25th of December.
+He has a friend named John, he is 30 years old, they play football together for 3 years.
+
+Example of irrelevant information about user:
+User asked AI for recipes of pizza, AI answered with recipe of pizza, user said "thanks".
+
+Information about user that you already know:
+{summary}
+
+Updated information about user:
+"""
 
 
 class Lila:
@@ -81,11 +100,10 @@ class Lila:
 
     def _load_memory_about_user(self, user_id: int) -> SavableVeryImportantMemory:
         with self._get_memory_lock(user_id=user_id):
+            suffix_template = PromptTemplate.from_template(SUMMARIZER_SUFFIX).partial(date=self._now())
             messages = [
-                SystemMessage(content=SUMMARIZER_PREFIX.format(date=self._now())),
-                HumanMessagePromptTemplate.from_template("Existing info about user:\n{{summary}}", "jinja2"),
-                HumanMessagePromptTemplate.from_template("New lines of conversation:\n{{new_lines}}", "jinja2"),
-                SystemMessage(content="You have to answer with updated info about user and nothing else."),
+                HumanMessagePromptTemplate.from_template("Conversation between AI and human:\n{{new_lines}}", "jinja2"),
+                SystemMessagePromptTemplate(prompt=suffix_template),
             ]
             return SavableVeryImportantMemory.load(
                 llm=self.short_term_memory_llm,
@@ -182,11 +200,13 @@ class Lila:
         return agent_executor
 
     async def arun(self, user_id: int, request: str) -> str:
+        print("Starting on message")
         short_term_memory = self._load_short_term_memory(user_id=user_id)
         memory_about_user = self._load_memory_about_user(user_id=user_id)
         long_term_memory = self._load_long_term_memory(user_id=user_id)
         agent = self._initialise_agent(user_id, short_term_memory, memory_about_user, long_term_memory)
         answer = await agent.arun(input=request)
+        print("Finished on message")
         return answer
 
     @staticmethod
@@ -197,6 +217,7 @@ class Lila:
         memory.save_context({"input": last_request}, {"output": last_answer})
 
     async def after_message(self, user_id: int):
+        print("Starting after message")
         short_term_memory = self._load_short_term_memory(user_id=user_id)
         memory_about_user = self._load_memory_about_user(user_id=user_id)
         new_long_term_memory = await self.short_term_memory_cleaner.compress(short_term_memory)
@@ -205,3 +226,4 @@ class Lila:
             self._add_to_long_term_memory(user_id=user_id, new_long_term_memory=new_long_term_memory)
             memory_about_user.update(short_term_memory.load_memory_variables({})["chat_history"])
             self._clear_short_term_memory(memory=short_term_memory)
+        print("Finished after message")
