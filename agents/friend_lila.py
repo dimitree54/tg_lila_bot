@@ -31,12 +31,12 @@ Current date time is {{date}}"""
 SUMMARIZER_SUFFIX = """It was a conversation between AI and human.
 You need to extract any information about the user that will help to make conversation with him more personal,
  so user feels that AI are his friend, that AI listen to him and care.
-But do not include conversation details, its topic, what were discussed, etc. 
+But do not include conversation details, its topic, what were discussed, etc.
 Do not include any information that is temporary relevant, for example, plans for the day.
 Only persistent information about user as person that does not change often.
 
 Using that extracted information, update what you already know about the user with new information.
- 
+
 For reference, today is {date}.
 
 Example of relevant information about user:
@@ -44,7 +44,7 @@ User name is Poul, he lives in Argentina, he is 25 years old, he likes to play f
 He speak Spanish and want AI to speak Spanish too. He does not like too much questions from AI.
 His birthday is 25th of December.
 He has a friend named John, he is 30 years old, they play football together for 3 years.
- 
+
 Example of irrelevant information about user:
 User asked AI for recipes of pizza, AI answered with recipe of pizza, user said "thanks".
 
