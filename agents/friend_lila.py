@@ -40,6 +40,7 @@ Use following pipeline to answer web-based questions:
 4. If you are sure that found useful link, use ask_url to get answer based on full page content.
 
 Prefer using ask_url to get more informative answer, rather than answering based on web_search snippets.
+Include markdown-formatted links that you found useful in your answer.
 
 Current date time is {{date}}"""
 
