@@ -6,7 +6,7 @@ from multiprocessing import Lock
 from typing import Optional
 
 from langchain import PromptTemplate, FAISS
-from langchain.agents import load_tools, AgentExecutor
+from langchain.agents import AgentExecutor
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.memory.chat_memory import BaseChatMemory
@@ -20,12 +20,28 @@ from yid_langchain_extensions.tools.utils import format_tools, format_tool_names
 
 from agents.stm_cleaner import ShortTermMemoryCleaner
 from agents.stm_savable import SavableSummaryBufferMemoryWithDates, SavableVeryImportantMemory
+from agents.tools import WebSearchTool, AskPageTool
 
 PREFIX = """You name is Lila (it is female name), you are AI-friend of the user.
 It is important that user feels you are friend, not his assistant (you are equal in conversation).
 You are not trying to help user, unless they ask you to. Just keeping conversation interesting and natural.
 Your conversation is happening in the Telegram messenger.
 You are using markdown for answers, so make sure to always escape all special characters.
+
+You will be provided with web tools: web_search and ask_url.
+web_search is like google, a tool to get relevant links with a short snippet from the page.
+It is fast and cheap, but does not provide rich information
+ask_url is like visiting use it to get answer based on full page content.
+It is slow and expensive, but provides rich information based on full page content.
+Use following pipeline to answer web-based questions:
+1. Use web_search to get relevant links
+2. Estimate if link is useful based on its snippet.
+3. If you are not sure that found useful link, refine your web_search query and go to step 1.
+4. If you are sure that found useful link, use ask_url to get answer based on full page content.
+
+Prefer using ask_url to get more informative answer, rather than answering based on web_search snippets.
+Include markdown-formatted links that you found useful in your answer.
+
 Current date time is {{date}}"""
 
 SUMMARIZER_SUFFIX = """It was a conversation between AI and human.
@@ -62,17 +78,22 @@ class Lila:
             os.makedirs(save_path)
         self.short_term_memory_cleaner = ShortTermMemoryCleaner()
 
-        self.llm = ChatOpenAI(model_name="gpt-4-0613", temperature=0)
+        self.smart_llm = ChatOpenAI(model_name="gpt-4-0613", temperature=0)
+        self.fast_llm = ChatOpenAI(model_name="gpt-3.5-turbo-0613", temperature=0)
+
         final_answer_tool = FinalAnswerTool()
-        self.tools = load_tools(["serpapi"], llm=self.llm) + [final_answer_tool]
+        web_search_tool = WebSearchTool()
+        ask_url_tool = AskPageTool(llm=self.smart_llm)
+
+        self.tools = [final_answer_tool, web_search_tool, ask_url_tool]
         self.output_parser = ActionParser.from_extra_thoughts([
-            Thought(name="thoughts", description="Your thoughts, user will not see them"),
+            Thought(name="thoughts", description="Your thoughts about what action to take, user will not see them"),
+            Thought(name="self_criticism", description="Your self-criticism about what you said, user will not see it"),
         ])
         self.format_message = PromptTemplate.from_template(
             self.output_parser.get_format_instructions(), template_format="jinja2").format(
             tool_names=format_tool_names(self.tools)
         )
-        self.short_term_memory_llm = ChatOpenAI(model_name="gpt-3.5-turbo-0613", temperature=0)
         self.long_term_memory_embeddings = OpenAIEmbeddings()
         self._memory_locks = defaultdict(Lock)
         self._locks_lock = Lock()
@@ -93,7 +114,7 @@ class Lila:
     def _load_short_term_memory(self, user_id: int) -> SavableSummaryBufferMemoryWithDates:
         with self._get_memory_lock(user_id=user_id):
             return SavableSummaryBufferMemoryWithDates.load(
-                llm=self.short_term_memory_llm, max_token_limit=6000,
+                llm=self.fast_llm, max_token_limit=6000,
                 memory_key="chat_history", return_messages=True,
                 save_path=self._get_user_dir(user_id=user_id)
             )
@@ -106,7 +127,7 @@ class Lila:
                 SystemMessagePromptTemplate(prompt=suffix_template),
             ]
             return SavableVeryImportantMemory.load(
-                llm=self.short_term_memory_llm,
+                llm=self.fast_llm,
                 save_path=self._get_user_dir(user_id=user_id),
                 summarizer_prompt=ChatPromptTemplate.from_messages(messages=messages),
             )
@@ -192,7 +213,7 @@ class Lila:
         ])
         prompt = ChatPromptTemplate.from_messages(messages=messages)
         agent_executor = SimpleAgent.from_llm_and_prompt(
-            llm=self.llm,
+            llm=self.smart_llm,
             prompt=prompt,
             output_parser=self.output_parser,
             stop_sequences=self.output_parser.stop_sequences,
@@ -201,13 +222,16 @@ class Lila:
 
     async def arun(self, user_id: int, request: str) -> str:
         print("Starting on message")
-        short_term_memory = self._load_short_term_memory(user_id=user_id)
-        memory_about_user = self._load_memory_about_user(user_id=user_id)
-        long_term_memory = self._load_long_term_memory(user_id=user_id)
-        agent = self._initialise_agent(user_id, short_term_memory, memory_about_user, long_term_memory)
-        answer = await agent.arun(input=request)
-        print("Finished on message")
-        return answer
+        try:
+            short_term_memory = self._load_short_term_memory(user_id=user_id)
+            memory_about_user = self._load_memory_about_user(user_id=user_id)
+            long_term_memory = self._load_long_term_memory(user_id=user_id)
+            agent = self._initialise_agent(user_id, short_term_memory, memory_about_user, long_term_memory)
+            answer = await agent.arun(input=request)
+            print("Finished on message")
+            return answer
+        except Exception as e:
+            return f"Error in telegram bot: {e}. Report it to developer."
 
     @staticmethod
     def _clear_short_term_memory(memory: BaseChatMemory):
