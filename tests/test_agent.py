@@ -10,8 +10,10 @@ from langchain.chat_models import ChatOpenAI
 from langchain.llms import FakeListLLM
 from langchain.memory.chat_memory import BaseChatMemory
 
+from agents.friend_lila import Lila
 from agents.stm_cleaner import ShortTermMemoryCleaner
 from agents.stm_savable import SavableSummaryBufferMemoryWithDates
+from agents.tools import WebSearchTool, AskPageTool
 
 
 def add_test_messages(memory: BaseChatMemory):
@@ -153,6 +155,60 @@ class TestShortTermMemoryCleaner(IsolatedAsyncioTestCase):
         summary = await self.cleaner.compress(memory)
         self.assertEqual(len(memory.load_memory_variables({})["chat_history"]), 2)
         self.assertIsNone(summary)
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.save_path)
+
+
+class TestLila(IsolatedAsyncioTestCase):
+    def setUp(self) -> None:
+        load_dotenv()
+        self.save_path = tempfile.mkdtemp()
+
+    async def test_init(self):
+        lila = Lila(self.save_path)
+        test_user_id = 0
+        short_term_memory = lila._load_short_term_memory(user_id=test_user_id)
+        memory_about_user = lila._load_memory_about_user(user_id=test_user_id)
+        long_term_memory = lila._load_long_term_memory(user_id=test_user_id)
+        agent = lila._initialise_agent(test_user_id, short_term_memory, memory_about_user, long_term_memory)
+        self.assertIsNotNone(agent)
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.save_path)
+
+
+class TestWebSearch(IsolatedAsyncioTestCase):
+    def setUp(self) -> None:
+        load_dotenv()
+        self.save_path = tempfile.mkdtemp()
+        self.test_user_id = 0
+        self.fake_summary = "blah blah blah"
+        self.llm = FakeListLLMTiktoken(responses=[self.fake_summary] * 100)
+
+    def test_search(self):
+        web_search_tool = WebSearchTool(num_results=1)
+        result = web_search_tool._run("latest news")
+        self.assertTrue(isinstance(result, str))
+
+    async def test_search_async(self):
+        web_search_tool = WebSearchTool()
+        result = await web_search_tool._arun("latest news")
+        self.assertTrue(isinstance(result, str))
+
+    def test_ask_page(self):
+        ask_url_tool = AskPageTool(llm=self.llm)
+        answer = ask_url_tool._run(
+            '{"url": "https://en.wikipedia.org/wiki/Cat", "question": "How many cats in the world?"}'
+        )
+        self.assertEqual(answer, self.fake_summary)
+
+    async def test_ask_page_async(self):
+        ask_url_tool = AskPageTool(llm=self.llm)
+        answer = await ask_url_tool._arun(
+            '{"url": "https://en.wikipedia.org/wiki/Cat", "question": "How many cats in the world?"}'
+        )
+        self.assertEqual(answer, self.fake_summary)
 
     def tearDown(self) -> None:
         shutil.rmtree(self.save_path)
