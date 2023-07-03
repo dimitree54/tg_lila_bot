@@ -116,7 +116,8 @@ class Lila:
             return SavableSummaryBufferMemoryWithDates.load(
                 llm=self.fast_llm, max_token_limit=6000,
                 memory_key="chat_history", return_messages=True,
-                save_path=self._get_user_dir(user_id=user_id)
+                save_path=self._get_user_dir(user_id=user_id),
+                output_key="raw_output"
             )
 
     def _load_memory_about_user(self, user_id: int) -> SavableVeryImportantMemory:
@@ -238,7 +239,7 @@ class Lila:
         last_request = memory.chat_memory.messages[-2].content
         last_answer = memory.chat_memory.messages[-1].content
         memory.clear()
-        memory.save_context({"input": last_request}, {"output": last_answer})
+        memory.save_context({"input": last_request}, {"raw_output": last_answer})
 
     async def after_message(self, user_id: int):
         print("Starting after message")
