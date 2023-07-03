@@ -9,7 +9,7 @@ google-cloud-translate==3.11.1
 tiktoken==0.4.0
 speechkit==2.1.0
 grpcio-tools==1.49.0
-yid-langchain-extensions==0.4.20
+yid-langchain-extensions==0.4.22
 faiss-cpu==1.7.4
 llama_index==0.6.38.post1
 duckduckgo-search==3.8.3
