@@ -18,8 +18,8 @@ load_dotenv()
 openai.api_key = os.environ["OPENAI_API_KEY"]
 configs_path = str(Path(__file__).parent / "configs")
 prompts_dir = str(Path(__file__).parent / "prompts")
-config = Config.load(os.path.join(configs_path, args.config_name))
-prompts = Prompts.load(os.path.join(prompts_dir, config.prompts_name))
+config = Config.load(os.path.join(configs_path, args.config_name + ".yaml"))
+prompts = Prompts.load(os.path.join(prompts_dir, config.prompts_name + ".yaml"))
 agent = HelperAgent(
     os.path.join(os.environ["SAVE_PATH"], config.save_dir_name),
     prompts
