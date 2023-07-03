@@ -21,58 +21,12 @@ from yid_langchain_extensions.tools.utils import format_tools, format_tool_names
 from agents.stm_cleaner import ShortTermMemoryCleaner
 from agents.stm_savable import SavableSummaryBufferMemoryWithDates, SavableVeryImportantMemory
 from agents.tools import WebSearchTool, AskPageTool
-
-PREFIX = """You name is Lila (it is female name), you are AI-friend of the user.
-It is important that user feels you are friend, not his assistant (you are equal in conversation).
-You are not trying to help user, unless they ask you to. Just keeping conversation interesting and natural.
-Your conversation is happening in the Telegram messenger.
-You are using markdown for answers, so make sure to always escape all special characters.
-
-You will be provided with web tools: web_search and ask_url.
-web_search is like google, a tool to get relevant links with a short snippet from the page.
-It is fast and cheap, but does not provide rich information
-ask_url is like visiting use it to get answer based on full page content.
-It is slow and expensive, but provides rich information based on full page content.
-Use following pipeline to answer web-based questions:
-1. Use web_search to get relevant links
-2. Estimate if link is useful based on its snippet.
-3. If you are not sure that found useful link, refine your web_search query and go to step 1.
-4. If you are sure that found useful link, use ask_url to get answer based on full page content.
-
-Prefer using ask_url to get more informative answer, rather than answering based on web_search snippets.
-Include markdown-formatted links that you found useful in your answer.
-
-Current date time is {{date}}"""
-
-SUMMARIZER_SUFFIX = """It was a conversation between AI and human.
-You need to extract any information about the user that will help to make conversation with him more personal,
- so user feels that AI are his friend, that AI listen to him and care.
-But do not include conversation details, its topic, what were discussed, etc.
-Do not include any information that is temporary relevant, for example, plans for the day.
-Only persistent information about user as person that does not change often.
-
-Using that extracted information, update what you already know about the user with new information.
-
-For reference, today is {date}.
-
-Example of relevant information about user:
-User name is Poul, he lives in Argentina, he is 25 years old, he likes to play football, he has a dog named Rex.
-He speak Spanish and want AI to speak Spanish too. He does not like too much questions from AI.
-His birthday is 25th of December.
-He has a friend named John, he is 30 years old, they play football together for 3 years.
-
-Example of irrelevant information about user:
-User asked AI for recipes of pizza, AI answered with recipe of pizza, user said "thanks".
-
-Information about user that you already know:
-{summary}
-
-Updated information about user:
-"""
+from prompts.prompts import Prompts
 
 
-class Lila:
-    def __init__(self, save_path: str):
+class HelperAgent:
+    def __init__(self, save_path: str, prompts: Prompts):
+        self.prompts = prompts
         self.save_path = save_path
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
@@ -122,7 +76,8 @@ class Lila:
 
     def _load_memory_about_user(self, user_id: int) -> SavableVeryImportantMemory:
         with self._get_memory_lock(user_id=user_id):
-            suffix_template = PromptTemplate.from_template(SUMMARIZER_SUFFIX).partial(date=self._now())
+            suffix_template = PromptTemplate.from_template(
+                self.prompts.important_memory_suffix).partial(date=self._now())
             messages = [
                 HumanMessagePromptTemplate.from_template("Conversation between AI and human:\n{{new_lines}}", "jinja2"),
                 SystemMessagePromptTemplate(prompt=suffix_template),
@@ -196,7 +151,7 @@ class Lila:
     def _initialise_agent(
             self, user_id: int, short_term_memory: BaseChatMemory, memory_about_user: SavableVeryImportantMemory,
             long_term_memory: Optional[FAISS]) -> AgentExecutor:
-        system_message = PromptTemplate.from_template(PREFIX, template_format="jinja2").format(
+        system_message = PromptTemplate.from_template(self.prompts.prefix, template_format="jinja2").format(
             date=self._now()
         )
         messages = [

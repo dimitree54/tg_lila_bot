@@ -1,5 +1,6 @@
 import shutil
 import tempfile
+from pathlib import Path
 from typing import List
 from unittest import TestCase, IsolatedAsyncioTestCase, skip
 
@@ -10,10 +11,11 @@ from langchain.chat_models import ChatOpenAI
 from langchain.llms import FakeListLLM
 from langchain.memory.chat_memory import BaseChatMemory
 
-from agents.friend_lila import Lila
+from agents.friend_lila import HelperAgent
 from agents.stm_cleaner import ShortTermMemoryCleaner
 from agents.stm_savable import SavableSummaryBufferMemoryWithDates
 from agents.tools import WebSearchTool, AskPageTool
+from prompts.prompts import Prompts
 
 
 def add_test_messages(memory: BaseChatMemory):
@@ -166,7 +168,8 @@ class TestLila(IsolatedAsyncioTestCase):
         self.save_path = tempfile.mkdtemp()
 
     async def test_init(self):
-        lila = Lila(self.save_path)
+        prompts = Prompts.load(str(Path(__file__).parents[1] / "prompts" / "friend.yaml"))
+        lila = HelperAgent(self.save_path, prompts)
         test_user_id = 0
         short_term_memory = lila._load_short_term_memory(user_id=test_user_id)
         memory_about_user = lila._load_memory_about_user(user_id=test_user_id)
