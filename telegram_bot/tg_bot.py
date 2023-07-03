@@ -3,7 +3,7 @@ import tempfile
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, CallbackContext, filters, CommandHandler
 
-from agents.friend_lila import Lila
+from agents.friend_lila import HelperAgent
 from speech.utils import ogg_to_mp3, mp3_to_text, text_to_mp3_multi_language
 
 INTRO = """This conversational bot is developed by Dmitrii Rashchenko.
@@ -26,13 +26,13 @@ To start just send any message to the bot."""
 
 
 class TelegramBot:
-    def __init__(self, token: str, lila: Lila):
+    def __init__(self, token: str, agent: HelperAgent):
         self.application = ApplicationBuilder().token(token=token).build()
         self.application.add_handler(CommandHandler("start", self.command_handler))
         self.application.add_handler(CommandHandler("forget", self.command_handler))
         self.application.add_handler(MessageHandler(filters.VOICE, self.voice_handler))
         self.application.add_handler(MessageHandler(filters.TEXT, self.text_handler))
-        self.lila = lila
+        self.agent = agent
 
     def run_polling(self):
         self.application.run_polling()
@@ -48,21 +48,21 @@ class TelegramBot:
         with tempfile.NamedTemporaryFile(suffix=".mp3") as mp3_file:
             await self._load_voice_mp3(update, context, mp3_file.name)
             transcript = mp3_to_text(mp3_file.name)
-            answer = await self.lila.arun(update.message.from_user.id, transcript)
+            answer = await self.agent.arun(update.message.from_user.id, transcript)
             if text_to_mp3_multi_language(answer, mp3_file.name) is None:
                 await update.message.reply_text(answer)
             else:
                 await update.message.reply_voice(voice=mp3_file.name, caption=answer)
-            await self.lila.after_message(update.message.from_user.id)
+            await self.agent.after_message(update.message.from_user.id)
 
     async def text_handler(self, update: Update, context: CallbackContext) -> None:  # noqa
-        answer = await self.lila.arun(update.message.from_user.id, update.message.text)
+        answer = await self.agent.arun(update.message.from_user.id, update.message.text)
         await update.message.reply_text(answer, parse_mode='Markdown')
-        await self.lila.after_message(update.message.from_user.id)
+        await self.agent.after_message(update.message.from_user.id)
 
     async def command_handler(self, update: Update, context: CallbackContext) -> None:  # noqa
         if update.message.text == "/forget":
-            self.lila.forget(update.message.from_user.id)
+            self.agent.forget(update.message.from_user.id)
             await update.message.reply_text("Chat history has been forgotten.")
         elif update.message.text == "/start":
             await update.message.reply_text(INTRO, disable_web_page_preview=True, parse_mode="Markdown")

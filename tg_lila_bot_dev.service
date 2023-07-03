@@ -2,7 +2,7 @@
 Description=tg_lila_bot_dev
 
 [Service]
-ExecStart=/root/tg_lila_bot_dev/venv/bin/python3 /root/tg_lila_bot_dev/main.py
+ExecStart=/root/tg_lila_bot_dev/venv/bin/python3 /root/tg_lila_bot_dev/main.py --config_name friend_dev
 Restart=always
 User=root
 Environment=PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python

@@ -21,12 +21,10 @@ jobs:
         script: |
           if [[ "${{ GITHUB.REF_NAME }}" == "main" ]]; then
             export SERVICE_NAME=tg_lila_bot
-            export TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN_PRODUCTION }}
             export REPO_DIR=/root/tg_lila_bot
             export DATA_DIR=/root/tg_lila_bot_data
           else
             export SERVICE_NAME=tg_lila_bot_dev
-            export TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
             export REPO_DIR=/root/tg_lila_bot_dev
             export DATA_DIR=/root/tg_lila_bot_dev_data
           fi
@@ -46,10 +44,10 @@ jobs:
           pip3 install -r requirements.txt
           
           printf '%s\n' '${{ secrets.GOOGLE_CREDENTIALS }}' > $REPO_DIR/google-credentials.json
-          echo TELEGRAM_TOKEN=$TELEGRAM_TOKEN >> $REPO_DIR/.env
+          echo FRIEND_TELEGRAM_TOKEN=${{ secrets.FRIEND_TELEGRAM_TOKEN }} >> $REPO_DIR/.env
+          echo FRIEND_TELEGRAM_TOKEN_DEV=${{ secrets.FRIEND_TELEGRAM_TOKEN_DEV }} >> $REPO_DIR/.env
           echo YANDEX_TTS_API_KEY=${{ secrets.YANDEX_TTS_API_KEY }} >> $REPO_DIR/.env
           echo OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} >> $REPO_DIR/.env
-          echo SERPAPI_API_KEY=${{ secrets.SERPAPI_API_KEY }} >> $REPO_DIR/.env
           echo GOOGLE_APPLICATION_CREDENTIALS=$REPO_DIR/google-credentials.json >> $REPO_DIR/.env
           echo SAVE_PATH=$DATA_DIR >> $REPO_DIR/.env
           
