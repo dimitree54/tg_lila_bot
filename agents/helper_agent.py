@@ -20,12 +20,13 @@ from yid_langchain_extensions.tools.utils import format_tools, format_tool_names
 
 from agents.stm_cleaner import ShortTermMemoryCleaner
 from agents.stm_savable import SavableSummaryBufferMemoryWithDates, SavableVeryImportantMemory
-from agents.tools import WebSearchTool, AskPageTool
+from agents.utils import format_now
+from agents.web_researcher import WebResearcherAgent
 from prompts.prompts import Prompts
 
 
 class HelperAgent:
-    def __init__(self, save_path: str, prompts: Prompts):
+    def __init__(self, save_path: str, prompts: Prompts, web_researcher_agent: WebResearcherAgent):
         self.prompts = prompts
         self.save_path = save_path
         if not os.path.isdir(save_path):
@@ -36,13 +37,14 @@ class HelperAgent:
         self.fast_llm = ChatOpenAI(model_name="gpt-3.5-turbo-0613", temperature=0)
 
         final_answer_tool = FinalAnswerTool()
-        web_search_tool = WebSearchTool()
-        ask_url_tool = AskPageTool(llm=self.smart_llm)
+        web_search_tool = web_researcher_agent.as_tool()
 
-        self.tools = [final_answer_tool, web_search_tool, ask_url_tool]
+        self.tools = [final_answer_tool, web_search_tool]
         self.output_parser = ActionParser.from_extra_thoughts([
-            Thought(name="thoughts", description="Your thoughts about what action to take, user will not see them"),
-            Thought(name="self_criticism", description="Your self-criticism about what you said, user will not see it"),
+            Thought(name="thoughts",
+                    description="Your thoughts about what action to take now and planning further steps."),
+            Thought(name="self_criticism",
+                    description="Your self-criticism about what you said, considering alternative options."),
         ])
         self.format_message = PromptTemplate.from_template(
             self.output_parser.get_format_instructions(), template_format="jinja2").format(
@@ -77,7 +79,7 @@ class HelperAgent:
     def _load_memory_about_user(self, user_id: int) -> SavableVeryImportantMemory:
         with self._get_memory_lock(user_id=user_id):
             suffix_template = PromptTemplate.from_template(
-                self.prompts.important_memory_suffix).partial(date=self._now())
+                self.prompts.important_memory_suffix).partial(date=format_now())
             messages = [
                 HumanMessagePromptTemplate.from_template("Conversation between AI and human:\n{{new_lines}}", "jinja2"),
                 SystemMessagePromptTemplate(prompt=suffix_template),
@@ -144,15 +146,11 @@ class HelperAgent:
                 relevant_memory_about_user += memory_about_user.buffer
         return relevant_memory_about_user
 
-    @staticmethod
-    def _now() -> str:
-        return datetime.now().strftime("%Y-%m-%d %H:%M")
-
     def _initialise_agent(
             self, user_id: int, short_term_memory: BaseChatMemory, memory_about_user: SavableVeryImportantMemory,
             long_term_memory: Optional[FAISS]) -> AgentExecutor:
         system_message = PromptTemplate.from_template(self.prompts.prefix, template_format="jinja2").format(
-            date=self._now()
+            date=format_now()
         )
         messages = [
             SystemMessage(content=system_message),

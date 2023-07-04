@@ -3,7 +3,7 @@ import tempfile
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, CallbackContext, filters, CommandHandler
 
-from agents.friend_lila import HelperAgent
+from agents.helper_agent import HelperAgent
 from speech.utils import ogg_to_mp3, mp3_to_text, text_to_mp3_multi_language
 
 INTRO = """This conversational bot is developed by Dmitrii Rashchenko.
