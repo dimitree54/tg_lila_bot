@@ -1,0 +1,34 @@
+name: Stop bots on Vultr VM
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Execute commands over SSH on Vultr VM
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VULTR_VM_HOST }}
+          username: ${{ secrets.VULTR_VM_USERNAME }}
+          key: ${{ secrets.VULTR_VM_SSH_KEY }}
+          password: ${{ secrets.VULTR_VM_PASSWORD }}
+          script: |
+            if [[ "${{ GITHUB.REF_NAME }}" == "main" ]]; then
+              export FRIEND_SERVICE_NAME=tg_lila_bot
+              export MENTOR_SERVICE_NAME=tg_lila_mentor_bot
+              export REPO_DIR=/root/tg_lila_bot
+            else
+              export FRIEND_SERVICE_NAME=tg_lila_bot_dev
+              export MENTOR_SERVICE_NAME=tg_lila_mentor_dev_bot
+              export REPO_DIR=/root/tg_lila_bot_dev
+            fi
+            
+            systemctl stop $FRIEND_SERVICE_NAME || true
+            systemctl stop $MENTOR_SERVICE_NAME || true
+            rm -rf $REPO_DIR

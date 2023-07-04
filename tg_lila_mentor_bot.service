@@ -1,0 +1,11 @@
+[Unit]
+Description=tg_lila_mentor_bot
+
+[Service]
+ExecStart=/root/tg_lila_bot/venv/bin/python3 /root/tg_lila_bot/main.py --config_name mentor
+Restart=always
+User=root
+Environment=PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+[Install]
+WantedBy=multi-user.target

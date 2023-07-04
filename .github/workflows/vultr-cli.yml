@@ -20,18 +20,21 @@ jobs:
         password: ${{ secrets.VULTR_VM_PASSWORD }}
         script: |
           if [[ "${{ GITHUB.REF_NAME }}" == "main" ]]; then
-            export SERVICE_NAME=tg_lila_bot
+            export FRIEND_SERVICE_NAME=tg_lila_bot
+            export MENTOR_SERVICE_NAME=tg_lila_mentor_bot
             export REPO_DIR=/root/tg_lila_bot
             export DATA_DIR=/root/tg_lila_bot_data
           else
-            export SERVICE_NAME=tg_lila_bot_dev
+            export FRIEND_SERVICE_NAME=tg_lila_bot_dev
+            export MENTOR_SERVICE_NAME=tg_lila_mentor_dev_bot
             export REPO_DIR=/root/tg_lila_bot_dev
             export DATA_DIR=/root/tg_lila_bot_dev_data
           fi
           
           sudo apt-get update && apt-get upgrade -y
           sudo apt-get install -y git python3-venv ffmpeg
-          systemctl stop $SERVICE_NAME || true
+          systemctl stop $FRIEND_SERVICE_NAME || true
+          systemctl stop $MENTOR_SERVICE_NAME || true
           mkdir -p $DATA_DIR
           
           rm -rf $REPO_DIR
@@ -46,12 +49,17 @@ jobs:
           printf '%s\n' '${{ secrets.GOOGLE_CREDENTIALS }}' > $REPO_DIR/google-credentials.json
           echo FRIEND_TELEGRAM_TOKEN=${{ secrets.FRIEND_TELEGRAM_TOKEN }} >> $REPO_DIR/.env
           echo FRIEND_TELEGRAM_TOKEN_DEV=${{ secrets.FRIEND_TELEGRAM_TOKEN_DEV }} >> $REPO_DIR/.env
+          echo MENTOR_TELEGRAM_TOKEN=${{ secrets.MENTOR_TELEGRAM_TOKEN }} >> $REPO_DIR/.env
+          echo MENTOR_TELEGRAM_TOKEN_DEV=${{ secrets.MENTOR_TELEGRAM_TOKEN_DEV }} >> $REPO_DIR/.env
           echo YANDEX_TTS_API_KEY=${{ secrets.YANDEX_TTS_API_KEY }} >> $REPO_DIR/.env
           echo OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} >> $REPO_DIR/.env
           echo GOOGLE_APPLICATION_CREDENTIALS=$REPO_DIR/google-credentials.json >> $REPO_DIR/.env
           echo SAVE_PATH=$DATA_DIR >> $REPO_DIR/.env
           
-          cp $REPO_DIR/$SERVICE_NAME.service /etc/systemd/system/$SERVICE_NAME.service
+          cp $REPO_DIR/$FRIEND_SERVICE_NAME.service /etc/systemd/system/$FRIEND_SERVICE_NAME.service
+          cp $REPO_DIR/$MENTOR_SERVICE_NAME.service /etc/systemd/system/$MENTOR_SERVICE_NAME.service
           systemctl daemon-reload
-          systemctl enable $SERVICE_NAME
-          systemctl start $SERVICE_NAME
+          systemctl enable $FRIEND_SERVICE_NAME
+          systemctl start $FRIEND_SERVICE_NAME
+          systemctl enable $MENTOR_SERVICE_NAME
+          systemctl start $MENTOR_SERVICE_NAME
