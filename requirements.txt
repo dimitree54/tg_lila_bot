@@ -1,6 +1,6 @@
 openai==0.27.8
 python-dotenv==1.0.0
-langchain==0.0.221
+langchain==0.0.223
 pydantic==1.10.10
 pydub==0.25.1
 python-telegram-bot==20.3
@@ -9,8 +9,8 @@ google-cloud-translate==3.11.1
 tiktoken==0.4.0
 speechkit==2.1.0
 grpcio-tools==1.49.0
-yid-langchain-extensions==0.4.22
+yid-langchain-extensions==0.4.23
 faiss-cpu==1.7.4
-llama_index==0.6.38.post1
+llama_index==0.7.0
 duckduckgo-search==3.8.3
 PyYAML==6.0
