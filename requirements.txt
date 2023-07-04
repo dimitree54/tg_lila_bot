@@ -11,6 +11,6 @@ speechkit==2.1.0
 grpcio-tools==1.49.0
 yid-langchain-extensions==0.4.23
 faiss-cpu==1.7.4
-llama_index==0.7.0
+llama_index==0.6.38.post1
 duckduckgo-search==3.8.3
 PyYAML==6.0
