@@ -1,9 +1,10 @@
+import json
 import os.path
 import shutil
 from collections import defaultdict
 from datetime import datetime
 from multiprocessing import Lock
-from typing import Optional
+from typing import Optional, Dict
 
 from langchain import PromptTemplate, FAISS
 from langchain.agents import AgentExecutor
@@ -16,6 +17,8 @@ from langchain.schema import SystemMessage, AIMessage
 from yid_langchain_extensions.agent.simple_agent import SimpleAgent
 from yid_langchain_extensions.output_parser.action_parser import ActionParser
 from yid_langchain_extensions.output_parser.thoughts_json_parser import Thought
+from yid_langchain_extensions.output_parser.utils import strip_json_from_md_snippet, get_dict_without_extra_fields, \
+    format_dict_to_json_md
 from yid_langchain_extensions.tools.utils import format_tools, format_tool_names, FinalAnswerTool
 
 from agents.stm_cleaner import ShortTermMemoryCleaner
@@ -68,12 +71,20 @@ class HelperAgent:
         return os.path.join(self._get_user_dir(user_id=user_id), "ltm")
 
     def _load_short_term_memory(self, user_id: int) -> SavableSummaryBufferMemoryWithDates:
+        def strip_raw_output(full_output: Dict[str, str]) -> Dict[str, str]:
+            raw_output = full_output["raw_output"]
+            json_raw_output = strip_json_from_md_snippet(raw_output)
+            raw_output_dict = json.loads(json_raw_output)
+            stripped_raw_output_dict = get_dict_without_extra_fields(raw_output_dict, ["action", "action_input"])
+            stripped_raw_output = format_dict_to_json_md(stripped_raw_output_dict)
+            return {**full_output, "raw_output": stripped_raw_output}
+
         with self._get_memory_lock(user_id=user_id):
             return SavableSummaryBufferMemoryWithDates.load(
                 llm=self.fast_llm, max_token_limit=6000,
                 memory_key="chat_history", return_messages=True,
                 save_path=self._get_user_dir(user_id=user_id),
-                output_key="raw_output"
+                output_key="raw_output", output_preprocessor=strip_raw_output,
             )
 
     def _load_memory_about_user(self, user_id: int) -> SavableVeryImportantMemory:
