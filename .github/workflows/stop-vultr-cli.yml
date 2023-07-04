@@ -1,4 +1,4 @@
-name: Deploy to Vultr VM
+name: Stop bots on Vultr VM
 
 on:
   workflow_dispatch:
