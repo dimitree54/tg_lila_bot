@@ -1,5 +1,6 @@
+import asyncio
 import json
-from typing import Any, Tuple
+from typing import Any, Tuple, List
 
 from langchain.base_language import BaseLanguageModel
 from langchain.tools import DuckDuckGoSearchResults, BaseTool
@@ -19,15 +20,17 @@ class WebSearchTool(DuckDuckGoSearchResults):
         return self._run(*args, **kwargs)
 
 
-class AskPageTool(BaseTool):
+class AskPagesTool(BaseTool):
     llm: BaseLanguageModel
     _page_loader = download_loader("SimpleWebPageReader")(html_to_text=True)  # noqa
-    name: str = "ask_url"
+    name: str = "ask_urls"
     description: str = \
         "You can ask a question about a URL. " \
         "That smart tool will parse URL content and answer your question. " \
-        "Provide url and question in json format. " \
-        "Example: {'url': 'https://en.wikipedia.org/wiki/Cat', 'question': 'How many cats in the world?'}"
+        "Provide provide urls and questions in json format. " \
+        "urls is a list of urls to ask corresponding question from questions list" \
+        'Example: {"urls": ["https://en.wikipedia.org/wiki/Cat", "https://en.wikipedia.org/wiki/Dog"], ' \
+        '"questions": ["How many cats in the world?", "How many dogs in the world?"]}'
 
     def _get_page_index(self, page: Document) -> GPTListIndex:
         llm_predictor_chatgpt = LLMPredictor(self.llm)
@@ -45,26 +48,45 @@ class AskPageTool(BaseTool):
         return self._get_page_index(page)
 
     @staticmethod
-    def _parse_args(*args, **kwargs) -> Tuple[str, str]:
+    def _parse_args(*args, **kwargs) -> List[Tuple[str, str]]:
         if len(args) == 1:
-            url_and_request_dict = json.loads(args[0])
-            url = url_and_request_dict["url"]
-            question = url_and_request_dict["question"]
+            urls_and_questions_dict = json.loads(args[0])
+            urls = urls_and_questions_dict["urls"]
+            questions = urls_and_questions_dict["questions"]
         else:
-            url = kwargs["url"]
-            question = kwargs["question"]
-        return url, question
+            urls = kwargs["urls"]
+            questions = kwargs["questions"]
+        return list(zip(urls, questions))
 
-    def _run(self, *args, **kwargs) -> Any:
-        url, question = self._parse_args(*args, **kwargs)
+    def _run_single(self, url: str, question: str) -> str:
         page_index = self._get_url_index(url)
         query_engine = page_index.as_query_engine(response_mode=ResponseMode.TREE_SUMMARIZE, use_async=False)
         response = query_engine.query(question)
         return response.response
 
-    async def _arun(self, *args, **kwargs) -> Any:
-        url, question = self._parse_args(*args, **kwargs)
+    async def _arun_single(self, url: str, question: str) -> str:
         page_index = self._get_url_index(url)
         query_engine = page_index.as_query_engine(response_mode=ResponseMode.TREE_SUMMARIZE, use_async=False)
         response = await query_engine.aquery(question)
         return response.response
+
+    def _run(self, *args, **kwargs) -> Any:
+        urls_with_questions = self._parse_args(*args, **kwargs)
+        full_response = ""
+        for url, question in urls_with_questions:
+            answer = self._run_single(url, question)
+            full_response += f"Question: {question} to {url}\nAnswer: {answer}\n"
+        return full_response
+
+    async def _arun(self, *args, **kwargs) -> Any:
+        urls_with_questions = self._parse_args(*args, **kwargs)
+        tasks = []
+        for url, question in urls_with_questions:
+            tasks.append(self._arun_single(url, question))
+        answers = await asyncio.gather(*tasks)
+        full_response = ""
+        for i in range(len(urls_with_questions)):
+            url, question = urls_with_questions[i]
+            answer = answers[i]
+            full_response += f"Question: {question} to {url}\nAnswer: {answer}\n"
+        return full_response

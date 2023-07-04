@@ -9,7 +9,7 @@ from yid_langchain_extensions.output_parser.thoughts_json_parser import Thought
 from yid_langchain_extensions.tools.agent_as_tool import AgentAsTool
 from yid_langchain_extensions.tools.utils import FinalAnswerTool, format_tool_names, format_tools
 
-from agents.tools import WebSearchTool, AskPageTool
+from agents.tools import WebSearchTool, AskPagesTool
 from agents.utils import format_now
 from prompts.prompts import Prompts
 
@@ -21,7 +21,7 @@ class WebResearcherAgent:
         self.fast_llm = ChatOpenAI(model_name="gpt-3.5-turbo-0613", temperature=0)
         final_answer_tool = FinalAnswerTool()
         web_search_tool = WebSearchTool()
-        ask_url_tool = AskPageTool(llm=self.smart_llm)
+        ask_url_tool = AskPagesTool(llm=self.smart_llm)
         self.tools = [final_answer_tool, web_search_tool, ask_url_tool]
         self.output_parser = ActionParser.from_extra_thoughts([
             Thought(name="thoughts",
