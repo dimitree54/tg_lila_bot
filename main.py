@@ -5,7 +5,7 @@ from pathlib import Path
 import openai
 from dotenv import load_dotenv
 
-from agents.friend_lila import HelperAgent
+from agents.helper_agent import HelperAgent
 from configs.config import Config
 from prompts.prompts import Prompts
 from telegram_bot.tg_bot import TelegramBot

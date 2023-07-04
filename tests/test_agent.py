@@ -11,7 +11,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.llms import FakeListLLM
 from langchain.memory.chat_memory import BaseChatMemory
 
-from agents.friend_lila import HelperAgent
+from agents.helper_agent import HelperAgent
 from agents.stm_cleaner import ShortTermMemoryCleaner
 from agents.stm_savable import SavableSummaryBufferMemoryWithDates
 from agents.tools import WebSearchTool, AskPageTool
