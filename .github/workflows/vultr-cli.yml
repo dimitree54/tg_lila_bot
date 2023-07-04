@@ -49,8 +49,8 @@ jobs:
           printf '%s\n' '${{ secrets.GOOGLE_CREDENTIALS }}' > $REPO_DIR/google-credentials.json
           echo FRIEND_TELEGRAM_TOKEN=${{ secrets.FRIEND_TELEGRAM_TOKEN }} >> $REPO_DIR/.env
           echo FRIEND_TELEGRAM_TOKEN_DEV=${{ secrets.FRIEND_TELEGRAM_TOKEN_DEV }} >> $REPO_DIR/.env
-          echo MENTOR_TELEGRAM_TOKEN=${{ secrets.FRIEND_TELEGRAM_TOKEN }} >> $REPO_DIR/.env
-          echo MENTOR_TELEGRAM_TOKEN_DEV=${{ secrets.FRIEND_TELEGRAM_TOKEN_DEV }} >> $REPO_DIR/.env
+          echo MENTOR_TELEGRAM_TOKEN=${{ secrets.MENTOR_TELEGRAM_TOKEN }} >> $REPO_DIR/.env
+          echo MENTOR_TELEGRAM_TOKEN_DEV=${{ secrets.MENTOR_TELEGRAM_TOKEN_DEV }} >> $REPO_DIR/.env
           echo YANDEX_TTS_API_KEY=${{ secrets.YANDEX_TTS_API_KEY }} >> $REPO_DIR/.env
           echo OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} >> $REPO_DIR/.env
           echo GOOGLE_APPLICATION_CREDENTIALS=$REPO_DIR/google-credentials.json >> $REPO_DIR/.env
