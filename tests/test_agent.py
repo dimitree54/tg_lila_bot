@@ -15,6 +15,7 @@ from agents.helper_agent import HelperAgent
 from agents.stm_cleaner import ShortTermMemoryCleaner
 from agents.stm_savable import SavableSummaryBufferMemoryWithDates
 from agents.tools import WebSearchTool, AskPageTool
+from agents.web_researcher import WebResearcherAgent
 from prompts.prompts import Prompts
 
 
@@ -169,7 +170,10 @@ class TestLila(IsolatedAsyncioTestCase):
 
     async def test_init(self):
         prompts = Prompts.load(str(Path(__file__).parents[1] / "prompts" / "friend.yaml"))
-        lila = HelperAgent(self.save_path, prompts)
+        web_researcher = WebResearcherAgent(
+            Prompts.load(str(Path(__file__).parents[1] / "prompts" / "web_researcher.yaml"))
+        )
+        lila = HelperAgent(self.save_path, prompts, web_researcher)
         test_user_id = 0
         short_term_memory = lila._load_short_term_memory(user_id=test_user_id)
         memory_about_user = lila._load_memory_about_user(user_id=test_user_id)
