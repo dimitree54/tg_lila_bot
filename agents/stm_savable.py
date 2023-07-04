@@ -1,7 +1,7 @@
 import json
 import os
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Callable
 
 from langchain.base_language import BaseLanguageModel
 from langchain.memory import ConversationSummaryBufferMemory, ChatMessageHistory
@@ -86,6 +86,7 @@ class SavableSummaryBufferMemoryWithDates(ConversationSummaryBufferMemory):
     save_path: str
     chat_memory_file_name: str
     summary_memory_file_name: str
+    output_preprocessor: Callable[[Dict], Dict] = lambda x: x
 
     @classmethod
     def load(cls, save_path: str, **kwargs):
@@ -123,7 +124,7 @@ class SavableSummaryBufferMemoryWithDates(ConversationSummaryBufferMemory):
         self._save_summary_memory()
 
     def save_context(self, inputs: Dict[str, Any], outputs: Dict[str, str]) -> None:
-        super().save_context(inputs, outputs)
+        super().save_context(inputs, self.output_preprocessor(outputs))
         self.save()
 
     def clear(self) -> None:
