@@ -14,7 +14,7 @@ from langchain.memory.chat_memory import BaseChatMemory
 from agents.helper_agent import HelperAgent
 from agents.stm_cleaner import ShortTermMemoryCleaner
 from agents.stm_savable import SavableSummaryBufferMemoryWithDates
-from agents.tools import WebSearchTool, AskPageTool
+from agents.tools import WebSearchTool, AskPagesTool
 from agents.web_researcher import WebResearcherAgent
 from prompts.prompts import Prompts
 
@@ -204,18 +204,30 @@ class TestWebSearch(IsolatedAsyncioTestCase):
         self.assertTrue(isinstance(result, str))
 
     def test_ask_page(self):
-        ask_url_tool = AskPageTool(llm=self.llm)
+        ask_url_tool = AskPagesTool(llm=self.llm)
         answer = ask_url_tool._run(
-            '{"url": "https://en.wikipedia.org/wiki/Cat", "question": "How many cats in the world?"}'
+            '{"urls": ["https://en.wikipedia.org/wiki/Cat", "https://en.wikipedia.org/wiki/Dog"], '
+            '"questions": ["How many cats in the world?", "How many dogs in the world?"]}'
         )
-        self.assertEqual(answer, self.fake_summary)
+        self.assertEqual(
+            answer,
+            'Question: How many cats in the world? to https://en.wikipedia.org/wiki/Cat\n'
+            'Answer: blah blah blah\n'
+            'Question: How many dogs in the world? to https://en.wikipedia.org/wiki/Dog\n'
+            'Answer: blah blah blah\n')
 
     async def test_ask_page_async(self):
-        ask_url_tool = AskPageTool(llm=self.llm)
+        ask_url_tool = AskPagesTool(llm=self.llm)
         answer = await ask_url_tool._arun(
-            '{"url": "https://en.wikipedia.org/wiki/Cat", "question": "How many cats in the world?"}'
+            '{"urls": ["https://en.wikipedia.org/wiki/Cat", "https://en.wikipedia.org/wiki/Dog"], '
+            '"questions": ["How many cats in the world?", "How many dogs in the world?"]}'
         )
-        self.assertEqual(answer, self.fake_summary)
+        self.assertEqual(
+            answer,
+            'Question: How many cats in the world? to https://en.wikipedia.org/wiki/Cat\n'
+            'Answer: blah blah blah\n'
+            'Question: How many dogs in the world? to https://en.wikipedia.org/wiki/Dog\n'
+            'Answer: blah blah blah\n')
 
     def tearDown(self) -> None:
         shutil.rmtree(self.save_path)
