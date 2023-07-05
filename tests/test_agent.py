@@ -5,6 +5,7 @@ from typing import List
 from unittest import TestCase, IsolatedAsyncioTestCase, skip
 
 import tiktoken
+import yaml
 from dotenv import load_dotenv
 from langchain.base_language import BaseLanguageModel
 from langchain.chat_models import ChatOpenAI
@@ -16,7 +17,6 @@ from agents.stm_cleaner import ShortTermMemoryCleaner
 from agents.stm_savable import SavableSummaryBufferMemoryWithDates
 from agents.tools import WebSearchTool, AskPagesTool
 from agents.web_researcher import WebResearcherAgent
-from prompts.prompts import Prompts
 
 
 def add_test_messages(memory: BaseChatMemory):
@@ -169,11 +169,14 @@ class TestLila(IsolatedAsyncioTestCase):
         self.save_path = tempfile.mkdtemp()
 
     async def test_init(self):
-        prompts = Prompts.load(str(Path(__file__).parents[1] / "prompts" / "friend.yaml"))
-        web_researcher = WebResearcherAgent(
-            Prompts.load(str(Path(__file__).parents[1] / "prompts" / "web_researcher.yaml"))
-        )
-        lila = HelperAgent(self.save_path, prompts, web_researcher)
+        agent_prompts_path = str(Path(__file__).parents[1] / "prompts" / "friend.yaml")
+        with open(agent_prompts_path, 'r') as f:
+            agent_prompts = yaml.safe_load(f)
+        web_researcher_prompts_path = str(Path(__file__).parents[1] / "prompts" / "web_researcher.yaml")
+        with open(web_researcher_prompts_path, 'r') as f:
+            web_researcher_prompts = yaml.safe_load(f)
+        web_researcher = WebResearcherAgent(web_researcher_prompts)
+        lila = HelperAgent(self.save_path, agent_prompts, web_researcher)
         test_user_id = 0
         short_term_memory = lila._load_short_term_memory(user_id=test_user_id)
         memory_about_user = lila._load_memory_about_user(user_id=test_user_id)

@@ -36,4 +36,22 @@ important_memory_suffix: |
   {summary}
   
   Updated information about user:
+
+telegram_greetings: |
+  This conversational bot is developed by Dmitrii Rashchenko.
+  The bot will call itself Lila and pretend to be your friend.
+  It is able to keep conversation, answer your questions, google things for you.
   
+  The bot is powered by OpenAI GPT-4 large language model.
+  It may accidentally produce some false, misleading or offensive content, be aware.
+  
+  Your chat will be stored on my server Vultr.
+  Note, that I have access to it, but I promise not read it and not let anyone to read it.
+  Use /forget command to make bot forget everything about you (data will be deleted from server).
+  
+  You can find the source code of the bot [here](https://github.com/dimitree54/tg_lila_bot).
+  
+  If you have any questions/problems/suggestions, please contact me via Telegram: @dimitree54
+  
+  Bot supports voice messages (and will answer you with voice too), give it a try!
+  To start just send any message to the bot.
