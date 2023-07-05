@@ -4,8 +4,8 @@ from typing import Any, Tuple, List
 
 from langchain.base_language import BaseLanguageModel
 from langchain.tools import DuckDuckGoSearchResults, BaseTool
-from llama_index import download_loader, GPTListIndex, Document, LLMPredictor, ServiceContext, ResponseSynthesizer
-from llama_index.indices.response import ResponseMode
+from llama_index import download_loader, GPTListIndex, Document, LLMPredictor, ServiceContext
+from llama_index.response_synthesizers import TreeSummarize
 
 
 class WebSearchTool(DuckDuckGoSearchResults):
@@ -35,11 +35,10 @@ class AskPagesTool(BaseTool):
     def _get_page_index(self, page: Document) -> GPTListIndex:
         llm_predictor_chatgpt = LLMPredictor(self.llm)
         service_context = ServiceContext.from_defaults(llm_predictor=llm_predictor_chatgpt, chunk_size=1024)
-        response_synthesizer = ResponseSynthesizer.from_args(response_mode=ResponseMode.TREE_SUMMARIZE, use_async=True)
         doc_summary_index = GPTListIndex.from_documents(
             [page],
             service_context=service_context,
-            response_synthesizer=response_synthesizer
+            response_synthesizer=TreeSummarize(service_context=service_context)
         )
         return doc_summary_index
 
@@ -60,13 +59,19 @@ class AskPagesTool(BaseTool):
 
     def _run_single(self, url: str, question: str) -> str:
         page_index = self._get_url_index(url)
-        query_engine = page_index.as_query_engine(response_mode=ResponseMode.TREE_SUMMARIZE, use_async=False)
+        llm_predictor_chatgpt = LLMPredictor(self.llm)
+        service_context = ServiceContext.from_defaults(llm_predictor=llm_predictor_chatgpt, chunk_size=1024)
+        query_engine = page_index.as_query_engine(
+            response_synthesizer=TreeSummarize(service_context=service_context), use_async=False)
         response = query_engine.query(question)
         return response.response
 
     async def _arun_single(self, url: str, question: str) -> str:
         page_index = self._get_url_index(url)
-        query_engine = page_index.as_query_engine(response_mode=ResponseMode.TREE_SUMMARIZE, use_async=False)
+        llm_predictor_chatgpt = LLMPredictor(self.llm)
+        service_context = ServiceContext.from_defaults(llm_predictor=llm_predictor_chatgpt, chunk_size=1024)
+        query_engine = page_index.as_query_engine(
+            response_synthesizer=TreeSummarize(service_context=service_context), use_async=False)
         response = await query_engine.aquery(question)
         return response.response
 
