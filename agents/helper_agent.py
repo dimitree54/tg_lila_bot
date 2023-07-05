@@ -16,14 +16,13 @@ from langchain.prompts import MessagesPlaceholder, \
 from langchain.schema import SystemMessage, AIMessage
 from yid_langchain_extensions.agent.simple_agent import SimpleAgent
 from yid_langchain_extensions.output_parser.action_parser import ActionParser
-from yid_langchain_extensions.output_parser.thoughts_json_parser import Thought
 from yid_langchain_extensions.output_parser.utils import strip_json_from_md_snippet, get_dict_without_extra_fields, \
     format_dict_to_json_md
 from yid_langchain_extensions.tools.utils import format_tools, format_tool_names, FinalAnswerTool
 
 from agents.stm_cleaner import ShortTermMemoryCleaner
 from agents.stm_savable import SavableSummaryBufferMemoryWithDates, SavableVeryImportantMemory
-from agents.utils import format_now
+from agents.utils import format_now, get_self_criticism_thought, get_thought_thought
 from agents.web_researcher import WebResearcherAgent
 
 
@@ -43,10 +42,7 @@ class HelperAgent:
 
         self.tools = [final_answer_tool, web_search_tool]
         self.output_parser = ActionParser.from_extra_thoughts([
-            Thought(name="thoughts",
-                    description="Your thoughts about what action to take now and planning further steps."),
-            Thought(name="self_criticism",
-                    description="Your self-criticism about what you said, considering alternative options."),
+            get_thought_thought(), get_self_criticism_thought()
         ])
         self.format_message = PromptTemplate.from_template(
             self.output_parser.get_format_instructions(), template_format="jinja2").format(

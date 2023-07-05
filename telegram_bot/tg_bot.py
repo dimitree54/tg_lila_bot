@@ -6,33 +6,16 @@ from telegram.ext import ApplicationBuilder, MessageHandler, CallbackContext, fi
 from agents.helper_agent import HelperAgent
 from speech.utils import ogg_to_mp3, mp3_to_text, text_to_mp3_multi_language
 
-INTRO = """This conversational bot is developed by Dmitrii Rashchenko.
-The bot will call itself Lila and pretend to be your friend.
-It is able to keep conversation, answer your questions, google things for you.
-Its functionality will be extended in the future.
-
-The bot is powered by OpenAI GPT-4 large language model.
-It may accidentally produce some false, misleading or offensive content, be aware.
-
-Your chat will be stored on my server Vultr.
-Use /forget command to make bot forget everything about you (it will be deleted from server).
-
-You can find the source code of the bot [here](https://github.com/dimitree54/tg_lila_bot).
-
-If you have any questions/problems/suggestions, please contact me via Telegram: @dimitree54
-
-Bot supports voice messages (and will answer you with voice too), give it a try!
-To start just send any message to the bot."""
-
 
 class TelegramBot:
-    def __init__(self, token: str, agent: HelperAgent):
+    def __init__(self, token: str, agent: HelperAgent, greetings_message: str):
         self.application = ApplicationBuilder().token(token=token).build()
         self.application.add_handler(CommandHandler("start", self.command_handler))
         self.application.add_handler(CommandHandler("forget", self.command_handler))
         self.application.add_handler(MessageHandler(filters.VOICE, self.voice_handler))
         self.application.add_handler(MessageHandler(filters.TEXT, self.text_handler))
         self.agent = agent
+        self.greetings_message = greetings_message
 
     def run_polling(self):
         self.application.run_polling()
@@ -65,6 +48,7 @@ class TelegramBot:
             self.agent.forget(update.message.from_user.id)
             await update.message.reply_text("Chat history has been forgotten.")
         elif update.message.text == "/start":
-            await update.message.reply_text(INTRO, disable_web_page_preview=True, parse_mode="Markdown")
+            await update.message.reply_text(
+                self.greetings_message, disable_web_page_preview=True, parse_mode="Markdown")
         else:
             await update.message.reply_text("Unknown command.")

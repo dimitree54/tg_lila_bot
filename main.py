@@ -32,4 +32,5 @@ agent = HelperAgent(
     agent_prompts,
     web_researcher_agent
 )
-TelegramBot(token=os.environ[config.telegram_token_name], agent=agent).run_polling()
+TelegramBot(token=os.environ[config.telegram_token_name], agent=agent,
+            greetings_message=agent_prompts["telegram_greetings"]).run_polling()

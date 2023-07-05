@@ -15,3 +15,11 @@ prefix: |
   Include links that you found useful in your answer.
 
   Current date time is {{date}}
+as_tool_intro: >
+  Tool to make a web research.
+  Provide a question in a free form with as many relevant details as possible.
+  Note that tool does not have access to chat history,
+  so include everything in question (for example location, date, special requests, etc.).
+  Example of good request: `What are the news for 20.4.2022 in Spain?
+  User like high-tech news, do not include any political news`;
+  Example of bad request: `latest news`

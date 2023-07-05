@@ -7,12 +7,11 @@ from langchain.schema import SystemMessage
 from langchain.tools import BaseTool
 from yid_langchain_extensions.agent.simple_agent import SimpleAgent
 from yid_langchain_extensions.output_parser.action_parser import ActionParser
-from yid_langchain_extensions.output_parser.thoughts_json_parser import Thought
 from yid_langchain_extensions.tools.agent_as_tool import AgentAsTool
 from yid_langchain_extensions.tools.utils import FinalAnswerTool, format_tool_names, format_tools
 
 from agents.tools import WebSearchTool, AskPagesTool
-from agents.utils import format_now
+from agents.utils import format_now, get_thought_thought, get_self_criticism_thought
 
 
 class WebResearcherAgent:
@@ -25,10 +24,7 @@ class WebResearcherAgent:
         ask_url_tool = AskPagesTool(llm=self.smart_llm)
         self.tools = [final_answer_tool, web_search_tool, ask_url_tool]
         self.output_parser = ActionParser.from_extra_thoughts([
-            Thought(name="thoughts",
-                    description="Your thoughts about what action to take now and planning further steps."),
-            Thought(name="self_criticism",
-                    description="Your self-criticism about what you said, considering alternative options."),
+            get_thought_thought(), get_self_criticism_thought()
         ])
         self.format_message = PromptTemplate.from_template(
             self.output_parser.get_format_instructions(), template_format="jinja2").format(
@@ -37,14 +33,8 @@ class WebResearcherAgent:
 
     def as_tool(self) -> BaseTool:
         name: str = "web_search"
-        description: str = \
-            "Tool to make a web research. " \
-            "Provide a question in a free form with as many relevant details as possible. " \
-            "Note that tool does not have access to chat history," \
-            " so include everything in question (for example location, date, special requests, etc.)." \
-            "Example of good request: `What are the news for 20.4.2022 in Spain?" \
-            " User like high-tech news, do not include any political news`;" \
-            "Example of bad request: `latest news`"
+        description: str = self.prompts["as_tool_intro"]
+
         system_message = PromptTemplate.from_template(self.prompts["prefix"], template_format="jinja2").format(
             date=format_now()
         )
