@@ -25,11 +25,10 @@ from agents.stm_cleaner import ShortTermMemoryCleaner
 from agents.stm_savable import SavableSummaryBufferMemoryWithDates, SavableVeryImportantMemory
 from agents.utils import format_now
 from agents.web_researcher import WebResearcherAgent
-from prompts.prompts import Prompts
 
 
 class HelperAgent:
-    def __init__(self, save_path: str, prompts: Prompts, web_researcher_agent: WebResearcherAgent):
+    def __init__(self, save_path: str, prompts: Dict[str, str], web_researcher_agent: WebResearcherAgent):
         self.prompts = prompts
         self.save_path = save_path
         if not os.path.isdir(save_path):
@@ -90,7 +89,7 @@ class HelperAgent:
     def _load_memory_about_user(self, user_id: int) -> SavableVeryImportantMemory:
         with self._get_memory_lock(user_id=user_id):
             suffix_template = PromptTemplate.from_template(
-                self.prompts.important_memory_suffix).partial(date=format_now())
+                self.prompts["important_memory_suffix"]).partial(date=format_now())
             messages = [
                 HumanMessagePromptTemplate.from_template("Conversation between AI and human:\n{{new_lines}}", "jinja2"),
                 SystemMessagePromptTemplate(prompt=suffix_template),
@@ -160,7 +159,7 @@ class HelperAgent:
     def _initialise_agent(
             self, user_id: int, short_term_memory: BaseChatMemory, memory_about_user: SavableVeryImportantMemory,
             long_term_memory: Optional[FAISS]) -> AgentExecutor:
-        system_message = PromptTemplate.from_template(self.prompts.prefix, template_format="jinja2").format(
+        system_message = PromptTemplate.from_template(self.prompts["prefix"], template_format="jinja2").format(
             date=format_now()
         )
         messages = [

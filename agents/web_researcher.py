@@ -1,3 +1,5 @@
+from typing import Dict
+
 from langchain import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import HumanMessagePromptTemplate, MessagesPlaceholder, ChatPromptTemplate
@@ -11,11 +13,10 @@ from yid_langchain_extensions.tools.utils import FinalAnswerTool, format_tool_na
 
 from agents.tools import WebSearchTool, AskPagesTool
 from agents.utils import format_now
-from prompts.prompts import Prompts
 
 
 class WebResearcherAgent:
-    def __init__(self, prompts: Prompts):
+    def __init__(self, prompts: Dict[str, str]):
         self.prompts = prompts
         self.smart_llm = ChatOpenAI(model_name="gpt-4-0613", temperature=0)
         self.fast_llm = ChatOpenAI(model_name="gpt-3.5-turbo-0613", temperature=0)
@@ -44,7 +45,7 @@ class WebResearcherAgent:
             "Example of good request: `What are the news for 20.4.2022 in Spain?" \
             " User like high-tech news, do not include any political news`;" \
             "Example of bad request: `latest news`"
-        system_message = PromptTemplate.from_template(self.prompts.prefix, template_format="jinja2").format(
+        system_message = PromptTemplate.from_template(self.prompts["prefix"], template_format="jinja2").format(
             date=format_now()
         )
         messages = [
