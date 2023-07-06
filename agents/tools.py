@@ -55,6 +55,12 @@ class AskPagesTool(BaseTool):
         else:
             urls = kwargs["urls"]
             questions = kwargs["questions"]
+        if len(urls) > 1 and len(questions) == 1:
+            questions = questions * len(urls)
+        if len(questions) > 1 and len(urls) == 1:
+            urls = urls * len(questions)
+        if len(urls) != len(questions):
+            raise ValueError("Number of urls and questions should be equal")
         return list(zip(urls, questions))
 
     def _run_single(self, url: str, question: str) -> str:
@@ -76,22 +82,28 @@ class AskPagesTool(BaseTool):
         return response.response
 
     def _run(self, *args, **kwargs) -> Any:
-        urls_with_questions = self._parse_args(*args, **kwargs)
-        full_response = ""
-        for url, question in urls_with_questions:
-            answer = self._run_single(url, question)
-            full_response += f"Question: {question} to {url}\nAnswer: {answer}\n"
+        try:
+            urls_with_questions = self._parse_args(*args, **kwargs)
+            full_response = ""
+            for url, question in urls_with_questions:
+                answer = self._run_single(url, question)
+                full_response += f"Question: {question} to {url}\nAnswer: {answer}\n"
+        except Exception as e:
+            full_response = f"Error: {e}"
         return full_response
 
     async def _arun(self, *args, **kwargs) -> Any:
-        urls_with_questions = self._parse_args(*args, **kwargs)
-        tasks = []
-        for url, question in urls_with_questions:
-            tasks.append(self._arun_single(url, question))
-        answers = await asyncio.gather(*tasks)
-        full_response = ""
-        for i in range(len(urls_with_questions)):
-            url, question = urls_with_questions[i]
-            answer = answers[i]
-            full_response += f"Question: {question} to {url}\nAnswer: {answer}\n"
+        try:
+            urls_with_questions = self._parse_args(*args, **kwargs)
+            tasks = []
+            for url, question in urls_with_questions:
+                tasks.append(self._arun_single(url, question))
+            answers = await asyncio.gather(*tasks)
+            full_response = ""
+            for i in range(len(urls_with_questions)):
+                url, question = urls_with_questions[i]
+                answer = answers[i]
+                full_response += f"Question: {question} to {url}\nAnswer: {answer}\n"
+        except Exception as e:
+            full_response = f"Error: {e}"
         return full_response

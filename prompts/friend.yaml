@@ -7,36 +7,18 @@ prefix: |
   
   You will be provided with web_search tool, you can use it to access internet.
   But before using it, make sure that you are able to make a detailed request.
-  If you are lack of some information important for request, ask user for it.
+  If you are lack of some information important for request, ask user for it before searching.
 
   Current date time is {{date}}
 
-important_memory_suffix: |
-  It was a conversation between AI and human.
-  You need to extract any information about the user that will help to make conversation with him more personal,
-   so user feels that AI are his friend, that AI listen to him and care.
-  But do not include conversation details, its topic, what were discussed, etc.
-  Do not include any information that is temporary relevant, for example, plans for the day.
-  Only persistent information about user as person that does not change often.
-  
-  Using that extracted information, update what you already know about the user with new information.
-  
-  For reference, today is {date}.
-  
-  Example of relevant information about user:
-  User name is Poul, he lives in Argentina, he is 25 years old, he likes to play football, he has a dog named Rex.
-  He speak Spanish and want AI to speak Spanish too. He does not like too much questions from AI.
-  His birthday is 25th of December.
-  He has a friend named John, he is 30 years old, they play football together for 3 years.
-  
-  Example of irrelevant information about user:
-  User asked AI for recipes of pizza, AI answered with recipe of pizza, user said "thanks".
-  
-  Information about user that you already know:
-  {summary}
-  
-  Updated information about user:
-
+important_memory_description: >
+  Important info is everything that you want to remember about user
+  and what will help you to make conversation more personal, enjoyable, useful for user.
+  For example (but not limited), include name, age, bday, location, hobbies, info about family, pets, friends, etc.
+  Also include user's conversation preferences here.
+  For example (but not limited), include how user prefers to be addressed, what topics user likes to discuss, style of your answers etc.
+  If you are including some temporary relevant information (for example, user's plan for a day),
+  mark it with time stamp, so in future you can understand that it is not relevant anymore and remove it.
 telegram_greetings: |
   This conversational bot is developed by Dmitrii Rashchenko.
   The bot will call itself Lila and pretend to be your friend.
