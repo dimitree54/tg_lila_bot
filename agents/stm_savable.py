@@ -3,12 +3,8 @@ import os
 from datetime import datetime
 from typing import List, Dict, Any, Callable
 
-from langchain.base_language import BaseLanguageModel
 from langchain.memory import ConversationSummaryBufferMemory, ChatMessageHistory
-from langchain.memory.summary import SummarizerMixin
-from langchain.prompts import ChatPromptTemplate
 from langchain.schema import BaseMessage, messages_from_dict, messages_to_dict
-from pydantic import BaseModel
 
 
 class ChatMessageHistoryWithDates(ChatMessageHistory):
@@ -40,46 +36,6 @@ def _load_chat_memory_with_dates(chat_memory_path: str) -> ChatMessageHistoryWit
     else:
         chat_memory = ChatMessageHistoryWithDates()
     return chat_memory
-
-
-class SavableVeryImportantMemory(BaseModel):
-    summariser: SummarizerMixin
-    save_path: str
-    very_important_memory_file_name: str
-    buffer: str = ""
-
-    @classmethod
-    def load(cls, llm: BaseLanguageModel, save_path: str, summarizer_prompt: ChatPromptTemplate, **kwargs):
-        very_important_memory_file_name = kwargs.pop("very_important_memory_file_name", "very_important_memory.txt")
-        very_important_memory_path = os.path.join(save_path, very_important_memory_file_name)
-        if os.path.isfile(very_important_memory_path):
-            with open(very_important_memory_path, "r") as f:
-                buffer = f.read()
-        else:
-            buffer = ""
-        summariser = SummarizerMixin(
-            llm=llm,
-            prompt=summarizer_prompt
-        )
-        return cls(
-            summariser=summariser,
-            save_path=save_path,
-            very_important_memory_file_name=very_important_memory_file_name,
-            buffer=buffer, **kwargs
-        )
-
-    def _save(self):
-        very_important_memory_path = os.path.join(self.save_path, self.very_important_memory_file_name)
-        with open(very_important_memory_path, "w") as f:
-            f.write(self.buffer)
-
-    def update(self, new_messages: List[BaseMessage]):
-        self.buffer = self.summariser.predict_new_summary(new_messages, self.buffer)
-        self._save()
-
-    def clear(self):
-        self.buffer = ""
-        self._save()
 
 
 class SavableSummaryBufferMemoryWithDates(ConversationSummaryBufferMemory):

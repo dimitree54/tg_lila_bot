@@ -17,3 +17,13 @@ def get_self_criticism_thought() -> Thought:
     return Thought(
         name="self_criticism",
         description="Your self-criticism about what you said, considering alternative options.")
+
+
+def get_important_info_thought(important_info_description) -> Thought:
+    return Thought(
+        name="updated_important_info",
+        description="(Optional) If based on chat important info may be updated,"
+                    " include that field in output json. "
+                    "It should include updated important info, including everything you known so fat plus new facts."
+                    f"It can be used only together with final_answer action. {important_info_description}"
+    )

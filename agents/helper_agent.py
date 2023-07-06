@@ -1,10 +1,10 @@
-import json
+import os.path
 import os.path
 import shutil
 from collections import defaultdict
 from datetime import datetime
 from multiprocessing import Lock
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 
 from langchain import PromptTemplate, FAISS
 from langchain.agents import AgentExecutor
@@ -12,17 +12,17 @@ from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.memory.chat_memory import BaseChatMemory
 from langchain.prompts import MessagesPlaceholder, \
-    HumanMessagePromptTemplate, ChatPromptTemplate, SystemMessagePromptTemplate
+    HumanMessagePromptTemplate, ChatPromptTemplate
 from langchain.schema import SystemMessage, AIMessage
 from yid_langchain_extensions.agent.simple_agent import SimpleAgent
 from yid_langchain_extensions.output_parser.action_parser import ActionParser
-from yid_langchain_extensions.output_parser.utils import strip_json_from_md_snippet, get_dict_without_extra_fields, \
+from yid_langchain_extensions.output_parser.utils import get_dict_without_extra_fields, \
     format_dict_to_json_md
 from yid_langchain_extensions.tools.utils import format_tools, format_tool_names, FinalAnswerTool
 
 from agents.stm_cleaner import ShortTermMemoryCleaner
-from agents.stm_savable import SavableSummaryBufferMemoryWithDates, SavableVeryImportantMemory
-from agents.utils import format_now, get_self_criticism_thought, get_thought_thought
+from agents.stm_savable import SavableSummaryBufferMemoryWithDates
+from agents.utils import format_now, get_self_criticism_thought, get_thought_thought, get_important_info_thought
 from agents.web_researcher import WebResearcherAgent
 
 
@@ -41,8 +41,10 @@ class HelperAgent:
         web_search_tool = web_researcher_agent.as_tool()
 
         self.tools = [final_answer_tool, web_search_tool]
-        self.output_parser = ActionParser.from_extra_thoughts([
+        self.output_parser = ActionParser.from_extra_thoughts(pre_thoughts=[
             get_thought_thought(), get_self_criticism_thought()
+        ], after_thoughts=[
+            get_important_info_thought(self.prompts["important_memory_description"])
         ])
         self.format_message = PromptTemplate.from_template(
             self.output_parser.get_format_instructions(), template_format="jinja2").format(
@@ -66,11 +68,8 @@ class HelperAgent:
         return os.path.join(self._get_user_dir(user_id=user_id), "ltm")
 
     def _load_short_term_memory(self, user_id: int) -> SavableSummaryBufferMemoryWithDates:
-        def strip_raw_output(full_output: Dict[str, str]) -> Dict[str, str]:
-            raw_output = full_output["raw_output"]
-            json_raw_output = strip_json_from_md_snippet(raw_output)
-            raw_output_dict = json.loads(json_raw_output)
-            stripped_raw_output_dict = get_dict_without_extra_fields(raw_output_dict, ["action", "action_input"])
+        def strip_raw_output(full_output: Dict[str, Any]) -> Dict[str, Any]:
+            stripped_raw_output_dict = get_dict_without_extra_fields(full_output, ["action", "action_input"])
             stripped_raw_output = format_dict_to_json_md(stripped_raw_output_dict)
             return {**full_output, "raw_output": stripped_raw_output}
 
@@ -82,19 +81,21 @@ class HelperAgent:
                 output_key="raw_output", output_preprocessor=strip_raw_output,
             )
 
-    def _load_memory_about_user(self, user_id: int) -> SavableVeryImportantMemory:
+    def _get_memory_about_user_path(self, user_id: int) -> str:
+        return os.path.join(self._get_user_dir(user_id=user_id), "memory_about_user.txt")
+
+    def _load_memory_about_user(self, user_id: int) -> str:
         with self._get_memory_lock(user_id=user_id):
-            suffix_template = PromptTemplate.from_template(
-                self.prompts["important_memory_suffix"]).partial(date=format_now())
-            messages = [
-                HumanMessagePromptTemplate.from_template("Conversation between AI and human:\n{{new_lines}}", "jinja2"),
-                SystemMessagePromptTemplate(prompt=suffix_template),
-            ]
-            return SavableVeryImportantMemory.load(
-                llm=self.fast_llm,
-                save_path=self._get_user_dir(user_id=user_id),
-                summarizer_prompt=ChatPromptTemplate.from_messages(messages=messages),
-            )
+            if os.path.exists(memory_about_user_path := self._get_memory_about_user_path(user_id=user_id)):
+                with open(memory_about_user_path, "r") as f:
+                    return f.read()
+            else:
+                return "Nothing is known about this user yet."
+
+    def _update_memory_about_user(self, user_id: int, new_memory: str):
+        with self._get_memory_lock(user_id=user_id):
+            with open(self._get_memory_about_user_path(user_id=user_id), "w") as f:
+                f.write(new_memory)
 
     def _load_long_term_memory(self, user_id: int) -> Optional[FAISS]:
         with self._get_memory_lock(user_id=user_id):
@@ -118,14 +119,14 @@ class HelperAgent:
 
     def forget(self, user_id: int):
         short_term_memory = self._load_short_term_memory(user_id=user_id)
-        memory_about_user = self._load_memory_about_user(user_id=user_id)
         with self._get_memory_lock(user_id=user_id):
             short_term_memory.clear()
-            memory_about_user.clear()
             ltm_path = self._get_user_ltm_path(user_id=user_id)
             if os.path.exists(ltm_path):
                 shutil.rmtree(ltm_path)
-        print(f"Memory about user {user_id} forgotten")
+            if os.path.exists(memory_about_user_path := self._get_memory_about_user_path(user_id=user_id)):
+                os.remove(memory_about_user_path)
+        print(f"Memory about user {user_id} removed")
 
     def _get_relevant_ltm(
             self, user_id: int, short_term_memory: BaseChatMemory, long_term_memory: Optional[FAISS]) -> Optional[str]:
@@ -142,25 +143,23 @@ class HelperAgent:
                       f"{relevant_document.page_content}"
             return thought
 
-    def _get_relevant_memory_about_user(self, user_id: int, memory_about_user: SavableVeryImportantMemory) -> str:
-        relevant_memory_about_user = "Thought (user does not see it):\n" \
-                                     "What I know about user so far:\n"
-        with self._get_memory_lock(user_id=user_id):
-            if memory_about_user.buffer == "":
-                relevant_memory_about_user += "Nothing"
-            else:
-                relevant_memory_about_user += memory_about_user.buffer
+    @staticmethod
+    def _get_relevant_memory_about_user(memory_about_user: str) -> str:
+        relevant_memory_about_user = \
+            "IMPORTANT INFO ABOUT USER:\n" \
+            "What have I learned about user so far:\n" \
+            f"{memory_about_user}"
         return relevant_memory_about_user
 
     def _initialise_agent(
-            self, user_id: int, short_term_memory: BaseChatMemory, memory_about_user: SavableVeryImportantMemory,
+            self, user_id: int, short_term_memory: BaseChatMemory, memory_about_user: str,
             long_term_memory: Optional[FAISS]) -> AgentExecutor:
         system_message = PromptTemplate.from_template(self.prompts["prefix"], template_format="jinja2").format(
             date=format_now()
         )
         messages = [
             SystemMessage(content=system_message),
-            AIMessage(content=self._get_relevant_memory_about_user(user_id, memory_about_user)),
+            AIMessage(content=self._get_relevant_memory_about_user(memory_about_user)),
             MessagesPlaceholder(variable_name="chat_history"),
             HumanMessagePromptTemplate.from_template("{{input}}", "jinja2"),
         ]
@@ -187,9 +186,11 @@ class HelperAgent:
             memory_about_user = self._load_memory_about_user(user_id=user_id)
             long_term_memory = self._load_long_term_memory(user_id=user_id)
             agent = self._initialise_agent(user_id, short_term_memory, memory_about_user, long_term_memory)
-            answer = await agent.arun(input=request)
+            answer = await agent.acall(inputs={"input": request}, return_only_outputs=True)
+            if "updated_important_info" in answer:
+                self._update_memory_about_user(user_id=user_id, new_memory=answer["updated_important_info"])
             print("Finished on message")
-            return answer
+            return answer["output"]
         except Exception as e:
             return f"Error in telegram bot: {e}. Report it to developer."
 
@@ -203,11 +204,9 @@ class HelperAgent:
     async def after_message(self, user_id: int):
         print("Starting after message")
         short_term_memory = self._load_short_term_memory(user_id=user_id)
-        memory_about_user = self._load_memory_about_user(user_id=user_id)
         new_long_term_memory = await self.short_term_memory_cleaner.compress(short_term_memory)
         if new_long_term_memory is not None:
             print(f"Adding to long term memory of user {user_id}: {new_long_term_memory}")
             self._add_to_long_term_memory(user_id=user_id, new_long_term_memory=new_long_term_memory)
-            memory_about_user.update(short_term_memory.load_memory_variables({})["chat_history"])
             self._clear_short_term_memory(memory=short_term_memory)
         print("Finished after message")

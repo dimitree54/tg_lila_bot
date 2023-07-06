@@ -23,9 +23,9 @@ class WebResearcherAgent:
         web_search_tool = WebSearchTool()
         ask_url_tool = AskPagesTool(llm=self.smart_llm)
         self.tools = [final_answer_tool, web_search_tool, ask_url_tool]
-        self.output_parser = ActionParser.from_extra_thoughts([
+        self.output_parser = ActionParser.from_extra_thoughts(pre_thoughts=[
             get_thought_thought(), get_self_criticism_thought()
-        ])
+        ], after_thoughts=[])
         self.format_message = PromptTemplate.from_template(
             self.output_parser.get_format_instructions(), template_format="jinja2").format(
             tool_names=format_tool_names(self.tools)
