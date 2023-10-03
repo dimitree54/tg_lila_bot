@@ -1,5 +1,4 @@
 # Telegram Bot Lila
-Bot is available by [link](https://github.com/dimitree54/tg_lila_bot).
 
 <img height="200" src="./.readme_images/IMG_20230113_182020.jpg" width="200"/>
 
